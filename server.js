@@ -20,7 +20,7 @@ router.post("/register", async (req, res) => {
         const query = "INSERT INTO users (username, email, password) VALUES (?, ?, ?)";
         db.query(query, [username, email, hashedPassword], (err, result) => {
             if (err) throw err;
-            res.status(201).send("User registered successfully");
+            res.status(201).json({ message: "User registered successfully", userId: result.insertId });
         });
     } catch (error) {
         res.status(500).send("Error registering user");
@@ -59,7 +59,7 @@ router.post('/login', (req, res) => {
             const isMatch = await bcrypt.compare(password, user.password);
             console.log("Password matched",isMatch);
             if (isMatch) {
-                res.status(200).send('Login successful');
+                res.status(200).json({ message: 'Login successful', userId: user.id });
             } else {
                 res.status(401).send('Invalid credentials');
             }
