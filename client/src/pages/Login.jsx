@@ -2,6 +2,8 @@ import { useState } from 'react'
 import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
 import InputField from '../components/InputField'
+import logo from '../assets/shilpeelogo1.png'
+import Register from './Register'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -31,8 +33,12 @@ export default function Login() {
   }
 
   return (
-    <div>
-      <h2>Login</h2>
+    <div className='login-container'>
+      <div className='login-box'>
+        <div className='login-logo'>
+          <img src={logo} alt="Company logo"/>
+        </div>
+        <h2>Login</h2>
       <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 8, maxWidth: 320 }}>
         <InputField
           type="email"
@@ -53,8 +59,14 @@ export default function Login() {
           autoComplete="current-password"
         />
         <button type="submit" disabled={loading}>{loading ? 'Logging in...' : 'Login'}</button>
+
       </form>
+      <div className='signup-link'>
+        <p>Don't have an account?<a href="/Register">Sign Up</a></p>
+      </div>
       {error && <p style={{ color: 'red' }}>{error}</p>}
+      </div>
+      
     </div>
   )
 } 

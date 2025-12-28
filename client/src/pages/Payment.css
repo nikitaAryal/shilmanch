@@ -1,0 +1,167 @@
+/* Background and layout */
+.payment-container {
+  min-height: 100vh;
+  background: linear-gradient(to bottom, #e6f8ec, #ffffff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  font-family: "Poppins", sans-serif;
+}
+
+.payment-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 30px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+  border: 1px solid #d1f0d8;
+  text-align: center;
+}
+
+/* Titles */
+.payment-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1b7a34;
+  margin-bottom: 8px;
+}
+
+.payment-subtitle {
+  color: #666;
+  font-size: 15px;
+  margin-bottom: 25px;
+}
+
+/* Seats section */
+.seats-section {
+  background: #f2fbf4;
+  border: 1px solid #d9f3de;
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 25px;
+}
+
+.seats-section h2 {
+  font-size: 18px;
+  color: #333;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.seat-list {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  padding: 0;
+  margin-bottom: 20px;
+}
+
+.seat-item {
+  background: #ffffff;
+  border: 1px solid #c9ebd0;
+  border-radius: 12px;
+  padding: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  box-shadow: 0 2px 5px rgba(27, 122, 52, 0.05);
+}
+
+/* Price info */
+.price-info {
+  border-top: 1px solid #d9f3de;
+  padding-top: 10px;
+}
+
+.price-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 15px;
+  color: #444;
+  margin: 6px 0;
+}
+
+.price-row.total {
+  font-weight: 600;
+  color: #1b7a34;
+  font-size: 17px;
+}
+
+/* Button styling */
+.esewa-btn {
+  background-color: #1b7a34;
+  color: white;
+  border: none;
+  border-radius: 30px;
+  padding: 14px 0;
+  width: 100%;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 10px rgba(27, 122, 52, 0.25);
+}
+
+.esewa-btn:hover {
+  background-color: #168f3f;
+  transform: scale(1.03);
+}
+
+.esewa-btn.loading {
+  background-color: #9ed5af;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Texts & links */
+.note-text {
+  font-size: 13px;
+  color: #666;
+  margin-top: 12px;
+}
+
+.back-link {
+  display: inline-block;
+  margin-top: 20px;
+  color: #1b7a34;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.25s;
+}
+
+.back-link:hover {
+  color: #168f3f;
+  text-decoration: underline;
+}
+
+/* eSewa logo */
+.esewa-logo {
+  width: 100px;
+  margin-top: 25px;
+  opacity: 0.85;
+  transition: opacity 0.3s;
+}
+
+.esewa-logo:hover {
+  opacity: 1;
+}
+
+/* Empty state */
+.payment-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #f8fcf9;
+  font-family: "Poppins", sans-serif;
+}
+
+.payment-empty h2 {
+  color: #1b7a34;
+  margin-bottom: 12px;
+  font-size: 22px;
+}

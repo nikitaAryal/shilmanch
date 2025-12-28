@@ -1,0 +1,99 @@
+.seating-page {
+  max-width: 900px;
+  margin: 2rem auto;
+  text-align: center;
+  font-family: Arial, sans-serif;
+}
+
+.note {
+  color: #ff4d4d;
+  margin-bottom: 1rem;
+}
+
+.seating-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 2rem 0;
+  justify-content: center;
+  align-items: center;
+}
+
+.seat-row {
+  display: flex;
+  gap: 10px;
+}
+
+.seat {
+  width: 40px;
+  height: 40px;
+  font-size: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 6px;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.2s;
+}
+
+.seat:hover {
+  transform: scale(1.1);
+}
+
+.seat.available {
+  background-color: #4CAF50; /* Green */
+  color: white;
+}
+
+.seat.booked {
+  background-color: #888; /* Grey */
+  color: white;
+  cursor: not-allowed;
+}
+
+.seat.selected {
+  background-color: #FFD700; /* Yellow */
+  color: black;
+}
+
+.seat.unavailable {
+  background-color: #ff4d4d; /* Red */
+  color: white;
+  cursor: not-allowed;
+}
+
+/* Legend */
+.legend {
+  display: flex;
+  justify-content: space-around;
+  margin: 1rem 0;
+}
+
+.legend div {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legend .seat {
+  width: 25px;
+  height: 25px;
+  font-size: 16px;
+}
+
+/* Proceed Button */
+.proceed-btn {
+  margin-top: 1rem;
+  padding: 0.8rem 1.5rem;
+  background-color: #007BFF;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.proceed-btn:hover {
+  background-color: #0056b3;
+}

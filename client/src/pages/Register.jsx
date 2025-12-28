@@ -2,6 +2,7 @@ import { useState } from 'react'
 import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
 import InputField from '../components/InputField'
+import logoo from '../assets/shillpeelogo2.png'
 
 export default function Register() {
   const [username, setUsername] = useState('')
@@ -27,8 +28,13 @@ export default function Register() {
   }
 
   return (
-    <div>
-      <h2>Register</h2>
+    <div className='register-container'>
+      
+      <div className='register-box'>
+        <div className='register-logo'>
+        <img src={logoo} alt='Company Logo'/>
+      </div>
+        <h2 className='register'>Register</h2>
       <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 8, maxWidth: 320 }}>
         <InputField
           type="text"
@@ -60,6 +66,8 @@ export default function Register() {
         <button type="submit" disabled={loading}>{loading ? 'Registering...' : 'Register'}</button>
       </form>
       {error && <p style={{ color: 'red' }}>{error}</p>}
+      </div>
+      
     </div>
   )
 } 

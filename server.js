@@ -2,9 +2,11 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
 const db = require("./db");
-
-
+const QRCode = require("qrcode");
+const path = require("path");
+const crypto = require("crypto");
 const router = express.Router();
+
 
 // Register a new user
 router.post("/register", async (req, res) => {
@@ -145,10 +147,10 @@ router.delete("/user/:id", async (req, res) => {
   //create play
 router.post("/createplay", (req, res) => {
   console.log("Register endpoint hit");
-  const { playname, director, duration, genre, added_by } = req.body;
+  const { playname, director, duration, genre, added_by, description, image_url } = req.body;
 
-  const query = "INSERT INTO plays (playname, director, duration, genre, added_by) VALUES (?, ?, ?, ?, ?)";
-  db.query(query, [playname, director, duration, genre, added_by], (err, result) => {
+  const query = "INSERT INTO plays (playname, director, duration, genre, added_by, description, image_url) VALUES (?, ?, ?, ?, ?, ?, ?)";
+  db.query(query, [playname, director, duration, genre, added_by, description, image_url], (err, result) => {
     if (err) {
       console.error("Database error:", err);
       return res.status(500).send("Error creating play");
@@ -158,47 +160,55 @@ router.post("/createplay", (req, res) => {
 });
 
 
-//play R
-router.get("/play/:id", async(req,res)=>{
-  try{
-    const { id } =req.params;
-    const data = await db.promise().query(
-      `SELECT *  from plays where id = ?`,[id]
-      );
-        res.status(200).json({
-          plays: data[0][0],
-        });
-      } catch (err) {
-        res.status(500).json({
-          message: err,
-        });
-      }
+//play R single
+router.get("/play/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [playData] = await db.promise().query(
+      `SELECT p.*, a.start_date, a.end_date, a.time
+       FROM plays p
+       LEFT JOIN active_play a ON p.id = a.play_id
+       WHERE p.id = ?`,
+      [id]
+    );
+
+    if (playData.length === 0) {
+      return res.status(404).json({ message: "Play not found" });
+    }
+
+    res.status(200).json({ play: playData[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 });
 
-//play R
-router.get("/plays", async(req, res) => {
-    try {
-        const data = await db.promise().query(
-          `SELECT *  from plays;`
-        );
-        res.status(202).json({
-          plays: data[0],
-        });
-      } catch (err) {
-        res.status(500).json({
-          message: err,
-        });
-      }
+
+//play Read all
+router.get("/plays", async (req, res) => {
+  try {
+    const [rows] = await db.promise().query(`
+      SELECT p.*, a.start_date, a.end_date
+      FROM plays p
+      LEFT JOIN active_play a ON p.id = a.play_id
+      ORDER BY a.end_date DESC
+    `);
+    res.status(200).json(rows);
+  } catch (err) {
+    console.error("Error fetching plays:", err);
+    res.status(500).json({ message: "Error fetching plays" });
+  }
 });
+
 
 //play U
 router.patch("/play/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { playname, director, genre, duration, added_by } = req.body;
+    const { playname, director, genre, duration, added_by, description, image_url } = req.body;
     await db.promise().query(
-        `UPDATE plays set playname = ?, director = ?, genre = ?, duration = ?, added_by = ? where id = ?`,
-        [ playname, director, genre, duration, added_by, id]
+        `UPDATE plays set playname = ?, director = ?, genre = ?, duration = ?, added_by = ?, description = ?, image_url = ? where id = ?`,
+        [ playname, director, genre, duration, added_by, description, image_url, id]
       );
     
     res.status(200).json({
@@ -232,10 +242,10 @@ router.delete("/play/:id", async (req, res) => {
 //activeplay create
 router.post("/createacplay", (req, res) => {
   console.log("Register endpoint hit");
-  const { time, total_occupancy, play_id } = req.body;
+  const { time, total_occupancy, play_id, start_date, end_date } = req.body;
 
-  const query = "INSERT INTO active_play (time, total_occupancy, play_id) VALUES (?, ?, ?)";
-  db.query(query, [time, total_occupancy, play_id], (err, result) => {
+  const query = "INSERT INTO active_play (time, total_occupancy, play_id, start_date, end_date) VALUES (?, ?, ?, ?, ?)";
+  db.query(query, [time, total_occupancy, play_id, start_date, end_date], (err, result) => {
     if (err) {
       console.error("Database error:", err);
       return res.status(500).send("Error creating play");
@@ -244,20 +254,23 @@ router.post("/createacplay", (req, res) => {
   });
 });
 
-//activeplay read
-router.get("/active_play", async(req, res) => {
-    try {
-        const data = await db.promise().query(
-          `SELECT *  from active_play;`
-        );
-        res.status(202).json({
-          active_play: data[0],
-        });
-      } catch (err) {
-        res.status(500).json({
-          message: err,
-        });
-      }
+//activeplay read (current plays)
+router.get("/active_play", async (req, res) => {
+  try {
+    const [rows] = await db.promise().query(`
+      SELECT p.*, a.start_date, a.end_date, a.time
+      FROM plays p
+      INNER JOIN active_play a ON p.id = a.play_id
+      WHERE CURDATE() BETWEEN a.start_date AND a.end_date
+      ORDER BY a.start_date ASC
+    `);
+    console.log("Active plays query result:", rows); // 👈 add this line
+
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error fetching active plays" });
+  }
 });
 
 //activeplay sinngle read
@@ -281,10 +294,10 @@ router.get("/active_play/:id", async(req,res)=>{
 router.patch("/active_play/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { time, total_occupancy, play_id } = req.body;
+    const { time, total_occupancy, play_id, start_date, end_date } = req.body;
     await db.promise().query(
-        `UPDATE active_play set time = ?, total_occupancy = ?, play_id = ? where id = ?`,
-        [ time, total_occupancy, play_id, id]
+        `UPDATE active_play SET time = ?, total_occupancy = ?, play_id = ?, start_date= ?, end_date = ? where id = ?`,
+        [ time, total_occupancy, play_id, start_date, end_date, id]
       );
     
     res.status(200).json({
@@ -318,15 +331,15 @@ router.delete("/active_play/:id", async (req, res) => {
 //bookings create
 router.post("/booking", (req, res) => {
   console.log("Register endpoint hit");
-  const { activeplay_id, seatno, payment_id, user_id } = req.body;
+  const { activeplay_id, seatno, payment_id, user_id, qr_code, order_id } = req.body;
 
-  const query = "INSERT INTO bookings (activeplay_id, seatno, payment_id, user_id) VALUES (?, ?, ?, ?)";
-  db.query(query, [activeplay_id, seatno, payment_id, user_id], (err, result) => {
+  const query = "INSERT INTO bookings (activeplay_id, seatno, payment_id, user_id, qr_code, order_id) VALUES (?, ?, ?, ?, ?, ?)";
+  db.query(query, [activeplay_id, seatno, payment_id, user_id, qr_code, order_id], (err, result) => {
     if (err) {
       console.error("Database error:", err);
-      return res.status(500).send("Booking Failed.");
+      return res.status(500).json({ message: "Booking Failed." });
     }
-    res.status(201).send("Show Booked Successfully.");
+    res.status(201).json({ message: "Show Booked Successfully." , bookingId: result.insertId});
   });
 });
 
@@ -363,14 +376,31 @@ router.get("/bookingrs/:id", async(req,res)=>{
       }
 });
 
+// booking active seats for a specific play
+router.get("/booking/active/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await db.promise().query(
+      `SELECT seatno FROM bookings WHERE activeplay_id = ?`,
+      [id]
+    );
+
+    res.status(200).json({ bookedSeats: rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error fetching booked seats" });
+  }
+});
+
+
 //booking update
 router.patch("/booking/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { activeplay_id, seatno, payment_id, user_id } = req.body;
+    const { activeplay_id, seatno, payment_id, user_id, qr_code, order_id } = req.body;
     await db.promise().query(
-        `UPDATE bookings set activeplay_id = ?, seatno = ?, payment_id = ?, user_id = ? where id = ?`,
-        [ activeplay_id, seatno, payment_id, user_id, id]
+        `UPDATE bookings set activeplay_id = ?, seatno = ?, payment_id = ?, user_id = ?, qr_code = ?, order_id where id = ?`,
+        [ activeplay_id, seatno, payment_id, user_id, qr_code,order_id, id]
       );
     
     res.status(200).json({
@@ -383,61 +413,225 @@ router.patch("/booking/:id", async (req, res) => {
   }
 });
 
-//eswea integration
-router.get("/pay-with-esewa",(req,res,next)=>{
-}) 
+// server.js (continued – add this at the end of your existing file)
 
-router.get("/success",()=>{
-//handle success callback
-})
 
-router.get("/failure",()=>{
-//handle failure callback
-})
+// ==================== PAYMENTS TABLE ROUTES ====================
 
-//html form
-router.get("/pay-with-esewa",(req,res,next)=>{
-    let order_price=req.query.price
-    let tax_amount=0
-    let amount=order_price
-    let transaction_uuid=generateRandomString()
-    let product_code="EPAYTEST"
-    let product_service_charge = 0
-    let product_delivery_charge = 0
-    let secretKey="8gBm/:&EnhH.1/q"
-    let signature=generateSignature(`total_amount=${amount},transaction_uuid=${transaction_uuid},product_code=${product_code}`,secretKey)
+// Create a payment record (when initiating payment, e.g., Razorpay order)
+router.post("/payments", async (req, res) => {
+  const { request_data, amount, status = "created" } = req.body; // request_data can store Razorpay order creation payload
 
- 
-    res.send(`
-    <body>
-        <form action="https://rc-epay.esewa.com.np/api/epay/main/v2/form" method="POST">
-            <input type="text" id="amount" name="amount" value="${amount}" required>
-            <input type="text" id="tax_amount" name="tax_amount" value ="${tax_amount}" required>
-            <input type="text" id="total_amount" name="total_amount" value="${amount}" required>
-            <input type="text" id="transaction_uuid" name="transaction_uuid" value="${transaction_uuid}" required>
-            <input type="text" id="product_code" name="product_code" value ="EPAYTEST" required>
-            <input type="text" id="product_service_charge" name="product_service_charge" value="${product_service_charge}" required>
-            <input type="text" id="product_delivery_charge" name="product_delivery_charge" value="${product_delivery_charge}" required>\
-            <input type="text" id="success_url" name="success_url" value="http://localhost:3000/success" required>
-            <input type="text" id="failure_url" name="failure_url" value="http://localhost:3000/failure" required>
-            <input type="text" id="signed_field_names" name="signed_field_names" value="total_amount,transaction_uuid,product_code" required>
-            <input type="text" id="signature" name="signature" value="${signature}" required>
-            <input value="Submit" type="submit">
-         </form>
-    </body>
-    `)
-    })
+  try {
+    const [result] = await db.promise().query(
+      `INSERT INTO payments (request_data, amount, status) VALUES (?, ?, ?)`,
+      [JSON.stringify(request_data), amount, status]
+    );
 
-router.get("/failure", (req, res) => {
-    console.log(req.query);
-    res.json({ message: "Payment failed" });
+    res.status(201).json({
+      message: "Payment record created",
+      paymentId: result.insertId,
+    });
+  } catch (err) {
+    console.error("Error creating payment record:", err);
+    res.status(500).json({ message: "Failed to create payment record" });
+  }
 });
 
-router.get("/success", (req, res) => {
-    let token = req.query.data;
-    let queryBody = JSON.parse(Buffer.from(token, "base64").toString("ascii"));
-    res.json({ "message": `Payment Info ${queryBody}` });
+// Update payment status + response (called in webhook or callback)
+router.patch("/payments/:id", async (req, res) => {
+  const { id } = req.params;
+  const { response_data, status } = req.body;
+
+  try {
+    await db.promise().query(
+      `UPDATE payments SET response_data = ?, status = ? WHERE id = ?`,
+      [JSON.stringify(response_data), status, id]
+    );
+
+    res.status(200).json({ message: "Payment updated successfully" });
+  } catch (err) {
+    console.error("Error updating payment:", err);
+    res.status(500).json({ message: "Failed to update payment" });
+  }
 });
+
+// Get single payment (admin/debug)
+router.get("/payments/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await db.promise().query(`SELECT * FROM payments WHERE id = ?`, [id]);
+    if (rows.length === 0) return res.status(404).json({ message: "Payment not found" });
+    res.status(200).json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+
+// ==================== ORDERS TABLE ROUTES ====================
+
+// Create order (usually after payment is initiated or verified)
+router.post("/orders", async (req, res) => {
+  const {
+    play_id,
+    show_date,
+    show_time,
+    seats_json,        // e.g., ["A1", "A2"] or JSON string
+    user_id,
+    amount,
+    transaction_uuid,  // optional unique identifier
+    status = "pending",
+    payment_id,
+  } = req.body;
+
+  try {
+    const seatsStr = Array.isArray(seats_json) ? JSON.stringify(seats_json) : seats_json;
+
+    const [result] = await db.promise().query(
+      `INSERT INTO orders 
+       (play_id, show_date, show_time, seats_json, user_id, amount, transaction_uuid, status, payment_id, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+      [
+        play_id,
+        show_date,
+        show_time,
+        seatsStr,
+        user_id,
+        amount,
+        transaction_uuid || null,
+        status,
+        payment_id || null,
+      ]
+    );
+
+    res.status(201).json({
+      message: "Order created successfully",
+      orderId: result.insertId,
+    });
+  } catch (err) {
+    console.error("Error creating order:", err);
+    res.status(500).json({ message: "Failed to create order" });
+  }
+});
+
+// Update order status (e.g., after successful payment webhook)
+router.patch("/orders/:id", async (req, res) => {
+  const { id } = req.params;
+  const { status, payment_id, paid_at, transaction_uuid } = req.body;
+
+  try {
+    let query = `UPDATE orders SET status = ?`;
+    const params = [status];
+
+    if (payment_id !== undefined) {
+      query += `, payment_id = ?`;
+      params.push(payment_id);
+    }
+    if (paid_at) {
+      query += `, paid_at = ?`;
+      params.push(paid_at);
+    }
+    if (transaction_uuid) {
+      query += `, transaction_uuid = ?`;
+      params.push(transaction_uuid);
+    }
+
+    query += ` WHERE id = ?`;
+    params.push(id);
+
+    await db.promise().query(query, params);
+
+    res.status(200).json({ message: "Order updated successfully" });
+  } catch (err) {
+    console.error("Error updating order:", err);
+    res.status(500).json({ message: "Failed to update order" });
+  }
+});
+
+// Get all orders (admin)
+router.get("/orders", async (req, res) => {
+  try {
+    const [rows] = await db.promise().query(`
+      SELECT o.*, p.playname, u.username, u.email
+      FROM orders o
+      LEFT JOIN plays p ON o.play_id = p.id
+      LEFT JOIN users u ON o.user_id = u.id
+      ORDER BY o.created_at DESC
+    `);
+    res.status(200).json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error fetching orders" });
+  }
+});
+
+// Get orders by user
+router.get("/orders/user/:user_id", async (req, res) => {
+  try {
+    const { user_id } = req.params;
+    const [rows] = await db.promise().query(`
+      SELECT o.*, p.playname, p.image_url
+      FROM orders o
+      JOIN plays p ON o.play_id = p.id
+      WHERE o.user_id = ?
+      ORDER BY o.created_at DESC
+    `, [user_id]);
+    res.status(200).json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error fetching user orders" });
+  }
+});
+
+// Get single order
+router.get("/orders/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await db.promise().query(`
+      SELECT o.*, p.playname, p.director, p.image_url, u.username, u.email
+      FROM orders o
+      JOIN plays p ON o.play_id = p.id
+      JOIN users u ON o.user_id = u.id
+      WHERE o.id = ?
+    `, [id]);
+
+    if (rows.length === 0) return res.status(404).json({ message: "Order not found" });
+    res.status(200).json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+
+// Optional: Webhook endpoint example for payment success (Razorpay, etc.)
+// You can call this from your payment gateway webhook
+router.post("/webhook/payment-success", async (req, res) => {
+  // Example payload: { payment_id: 123, order_id: 456, status: "captured", signature: "..." }
+  const { payment_id, order_id, status } = req.body;
+
+  try {
+    // 1. Update payment status
+    await db.promise().query(
+      `UPDATE payments SET status = ? WHERE id = ?`,
+      [status, payment_id]
+    );
+
+    // 2. Update order status and link payment
+    await db.promise().query(
+      `UPDATE orders SET status = 'paid', payment_id = ?, paid_at = NOW() WHERE id = ?`,
+      [payment_id, order_id]
+    );
+
+    // TODO: Here you could also create bookings from seats_json
+
+    res.status(200).json({ message: "Webhook processed" });
+  } catch (err) {
+    console.error("Webhook error:", err);
+    res.status(500).json({ message: "Webhook failed" });
+  }
+});
+
 
 
 module.exports = router;

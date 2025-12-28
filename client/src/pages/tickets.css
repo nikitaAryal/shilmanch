@@ -1,0 +1,93 @@
+.ticket-page {
+  max-width: 1000px;
+  margin: 2rem auto;
+  padding: 1rem;
+  font-family: Arial, sans-serif;
+}
+
+.play-header {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.play-image {
+  width: 300px;
+  height: 400px;
+  object-fit: cover;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+}
+
+.play-details {
+  flex: 1;
+}
+
+.play-details h1 {
+  margin-bottom: 1rem;
+  font-size: 2rem;
+}
+
+.play-details .desc {
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.calendar-section {
+  margin-bottom: 2rem;
+}
+
+.calendar-grid {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.calendar-box {
+  cursor: pointer;
+  padding: 1rem;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  text-align: center;
+  min-width: 80px;
+  transition: all 0.3s;
+}
+
+.calendar-box:hover {
+  border-color: #007BFF;
+  background-color: #e6f0ff;
+}
+
+.calendar-box.selected {
+  border-color: #007BFF;
+  background-color: #cce0ff;
+}
+
+.weekday {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 0.3rem;
+}
+
+.date {
+  font-size: 1.1rem;
+}
+
+.time-section {
+  margin-top: 1rem;
+}
+
+.time-btn {
+  padding: 0.7rem 1.5rem;
+  font-size: 1.1rem;
+  border: none;
+  border-radius: 8px;
+  background-color: #007BFF;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.time-btn:hover {
+  background-color: #0056b3;
+}

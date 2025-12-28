@@ -1,0 +1,60 @@
+.header {
+  background-color: #f4f4f6;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  padding: 15px 40px;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.nav-list {
+  list-style: none;
+  display: flex;
+  gap: 25px;
+  padding: 0;
+  margin: 10px 0 0;
+}
+
+.nav-list a {
+  color: rgb(7, 7, 7);
+  text-decoration: none;
+  font-weight: 500;
+  transition: 0.3s;
+}
+
+.nav-list a:hover {
+  text-decoration: underline;
+}
+
+.logo {
+    font-size: 24px;
+    font-weight: bold;
+    margin: 0;
+}
+
+.header-left .logo {
+  height: 70px; /* adjust size */
+  width: auto;
+}
+
+.header-right {
+  display: flex;
+  flex-direction: column; /* makes them line-wise (vertically stacked) */
+  align-items: flex-end;
+}
+
+.header-right a {
+  text-decoration: none;
+  color: #333;
+  margin: 3px 0;
+  font-size: 16px;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.header-right a:hover {
+  color: #c62828;
+}
