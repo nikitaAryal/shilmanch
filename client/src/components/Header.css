@@ -58,3 +58,25 @@
 .header-right a:hover {
   color: #c62828;
 }
+
+/* Logout button styles */
+.nav-list .logout-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.nav-list .logout-btn:hover {
+  background: #dc2626;
+}
+
+.nav-list li {
+  display: flex;
+  align-items: center;
+}

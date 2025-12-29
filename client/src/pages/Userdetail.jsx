@@ -1,32 +1,32 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { useAuth } from "../context/AuthContext";
+import { usersAPI, ordersAPI } from "../services/api";
 
 const UserProfile = () => {
-  const [user, setUser] = useState(null);
+  const [userData, setUserData] = useState(null);
   const [address, setAddress] = useState("");
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const navigate = useNavigate();
-  const userId = localStorage.getItem("userId"); // assuming you store userId after login
-  console.log("Stored userId:", userId);
+  const { user, logout, updateUser } = useAuth();
+
   useEffect(() => {
-    if (!userId) {
-      navigate("/login");
+    if (!user?.id) {
       return;
     }
 
     const fetchUserData = async () => {
       try {
         // Fetch user details
-        const userRes = await axios.get(`/api/user/${userId}`);
-        setUser(userRes.data.user);
+        const userRes = await usersAPI.getById(user.id);
+        setUserData(userRes.data.user);
         setAddress(userRes.data.user.address || "");
 
         // Fetch booking history (orders)
-        const ordersRes = await axios.get(`/orders/user/${userId}`);
+        const ordersRes = await ordersAPI.getByUser(user.id);
         setOrders(ordersRes.data);
       } catch (err) {
         console.error(err);
@@ -36,18 +36,22 @@ const UserProfile = () => {
     };
 
     fetchUserData();
-  }, [userId, navigate]);
+  }, [user?.id]);
 
   const handleAddressUpdate = async () => {
     if (!address.trim()) return;
 
     setSaving(true);
     try {
-      // Only update address (other fields like password/admin not touched)
-      await axios.patch(`/user/${userId}`, {
+      await usersAPI.update(user.id, {
+        username: userData.username,
+        email: userData.email,
+        password: userData.password || '',
         address: address.trim(),
+        is_admin: userData.is_admin || false,
       });
-      setUser((prev) => ({ ...prev, address: address.trim() }));
+      setUserData((prev) => ({ ...prev, address: address.trim() }));
+      updateUser({ address: address.trim() });
       alert("Address updated successfully");
     } catch (err) {
       console.error(err);
@@ -58,8 +62,7 @@ const UserProfile = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("userId");
-    // add any other cleanup if needed
+    logout();
     navigate("/login");
   };
 
@@ -67,7 +70,7 @@ const UserProfile = () => {
     return <div className="p-8 text-center">Loading...</div>;
   }
 
-  if (!user) {
+  if (!userData) {
     return <div className="p-8 text-center">User not found</div>;
   }
 
@@ -82,11 +85,11 @@ const UserProfile = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div>
             <label className="block text-sm font-medium text-gray-700">Username</label>
-            <p className="mt-1 text-lg">{user.username}</p>
+            <p className="mt-1 text-lg">{userData.username}</p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Email</label>
-            <p className="mt-1 text-lg">{user.email}</p>
+            <p className="mt-1 text-lg">{userData.email}</p>
           </div>
         </div>
 
@@ -104,7 +107,7 @@ const UserProfile = () => {
           />
           <button
             onClick={handleAddressUpdate}
-            disabled={saving || address.trim() === (user.address || "")}
+            disabled={saving || address.trim() === (userData.address || "")}
             className="mt-3 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:bg-gray-400"
           >
             {saving ? "Saving..." : "Save Address"}

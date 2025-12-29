@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { playsAPI } from "../services/api";
 import "./tickets.css";
 
 const Tickets = () => {
@@ -11,7 +12,6 @@ const Tickets = () => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [showTimes, setShowTimes] = useState([]);
 
-  // helper to get list of dates between start_date and end_date
   const generateDateRange = (start, end) => {
     const dates = [];
     let current = new Date(start);
@@ -30,10 +30,11 @@ const Tickets = () => {
   };
 
   useEffect(() => {
-    fetch(`http://localhost:3000/api/play/${id}`)
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("Fetched single play:", data);
+    const fetchPlay = async () => {
+      try {
+        const response = await playsAPI.getById(id);
+        const data = response.data;
+
         if (data && data.play) {
           setPlay(data.play);
           if (data.play.start_date && data.play.end_date) {
@@ -43,23 +44,29 @@ const Tickets = () => {
             );
             setShowDates(generatedDates);
           }
-          // get show times from DB if available
           if (data.play.time) {
             setShowTimes([data.play.time]);
           }
         } else {
           setPlay(null);
         }
-        setLoading(false);
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error("Error fetching play:", err);
+        setPlay(null);
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+
+    fetchPlay();
   }, [id]);
 
   const handleTimeClick = () => {
-    navigate("/Seating", {
+    if (!selectedDate) {
+      alert("Please select a date first");
+      return;
+    }
+    navigate("/seating", {
       state: { play, selectedDate, showTimes: showTimes[0] },
     });
   };
@@ -71,7 +78,7 @@ const Tickets = () => {
     <div className="ticket-page">
       <div className="play-header">
         <img
-          src={`http://localhost:3000/api/${play.image_url}`}
+          src={`/api/${play.image_url}`}
           alt={play.playname}
           className="play-image"
         />

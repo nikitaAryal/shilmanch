@@ -165,3 +165,104 @@
   margin-bottom: 12px;
   font-size: 22px;
 }
+
+/* Payment Method Selection */
+.payment-method-section {
+  margin-bottom: 25px;
+  text-align: left;
+}
+
+.payment-method-section h2 {
+  font-size: 16px;
+  color: #333;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.payment-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.payment-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.payment-option:hover {
+  border-color: #1b7a34;
+  background: #f8fcf9;
+}
+
+.payment-option.selected {
+  border-color: #1b7a34;
+  background: #f0fdf4;
+}
+
+.payment-option input[type="radio"] {
+  margin-top: 4px;
+  accent-color: #1b7a34;
+}
+
+.payment-option .option-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.payment-option .option-content strong {
+  font-size: 15px;
+  color: #1f2937;
+}
+
+.payment-option .option-content small {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* Updated payment button */
+.payment-btn {
+  background-color: #1b7a34;
+  color: white;
+  border: none;
+  border-radius: 30px;
+  padding: 14px 0;
+  width: 100%;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 10px rgba(27, 122, 52, 0.25);
+}
+
+.payment-btn:hover {
+  background-color: #168f3f;
+  transform: scale(1.03);
+}
+
+.payment-btn.loading {
+  background-color: #9ed5af;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  color: #1b7a34;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 16px;
+  font-size: 14px;
+}
+
+.back-btn:hover {
+  text-decoration: underline;
+}

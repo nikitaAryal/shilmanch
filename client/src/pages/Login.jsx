@@ -1,9 +1,8 @@
 import { useState } from 'react'
-import axios from 'axios'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import InputField from '../components/InputField'
 import logo from '../assets/shilpeelogo1.png'
-import Register from './Register'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -11,22 +10,37 @@ export default function Login() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const location = useLocation()
+  const { login, isAuthenticated } = useAuth()
+
+  // Redirect if already logged in
+  if (isAuthenticated) {
+    const from = location.state?.from?.pathname || '/'
+    navigate(from, { replace: true })
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
     try {
-      const { data } = await axios.post('/api/login', { email, password })
-      if (data?.userId) {
-        localStorage.setItem('userId', String(data.userId))
-        navigate('/')
+      const data = await login(email, password)
+      // Redirect to the page they tried to visit or home
+      const from = location.state?.from?.pathname || '/'
+      // If admin, redirect to admin panel
+      if (data.user?.is_admin) {
+        navigate('/admin')
       } else {
-        setError('Unexpected response')
+        navigate(from, { replace: true })
       }
     } catch (err) {
-      if (err.response) setError(err.response.data || 'Login failed')
-      else setError('Network error')
+      if (err.response?.data?.message) {
+        setError(err.response.data.message)
+      } else if (err.response?.data) {
+        setError(err.response.data)
+      } else {
+        setError('Network error')
+      }
     } finally {
       setLoading(false)
     }

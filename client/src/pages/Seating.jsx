@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { bookingAPI } from "../services/api";
 import "./seating.css";
 
 const Seating = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const { play, selectedDate, showTimes } = location.state || {};
 
   const rows = 6;
@@ -12,8 +15,8 @@ const Seating = () => {
   const [seats, setSeats] = useState([]);
   const [bookedSeats, setBookedSeats] = useState([]);
 
-  const user_id = 1; // 👈 Replace with actual logged-in user's ID when auth is ready
-  const payment_id = null; // you can update this after successful payment
+  const user_id = user?.id;
+  const payment_id = null;
 
   // Fetch booked seats from backend
   useEffect(() => {
@@ -21,16 +24,13 @@ const Seating = () => {
 
     const fetchBookedSeats = async () => {
       try {
-        const res = await fetch(`http://localhost:3000/api/booking/active/${play.id}`);
-        const data = await res.json();
-
-        // Extract seatnos only for the current play
-        const booked = data.bookedSeats.map((b) => b.seatno);
-      setBookedSeats(booked);
-    } catch (error) {
-      console.error("Error fetching booked seats:", error);
-    }
-  };
+        const response = await bookingAPI.getBookedSeats(play.id);
+        const booked = response.data.bookedSeats.map((b) => b.seatno);
+        setBookedSeats(booked);
+      } catch (error) {
+        console.error("Error fetching booked seats:", error);
+      }
+    };
 
     fetchBookedSeats();
   }, [play?.id]);
@@ -65,46 +65,20 @@ const Seating = () => {
     );
   };
 
-  // 🧾 Function to send seat booking to backend
-  const bookSeatInBackend = async (seatno) => {
-    try {
-      const res = await fetch("http://localhost:3000/api/booking", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          activeplay_id: play.id,
-          seatno,
-          payment_id,
-          user_id,
-        }),
-      });
-
-      if (!res.ok) {
-        const msg = await res.text();
-        console.error("Booking failed:", msg);
-      }
-    } catch (error) {
-      console.error("Error booking seat:", error);
-    }
-  };
-
   const handleProceedPayment = async () => {
     const selectedSeats = seats
       .flat()
       .filter((seat) => seat.status === "selected")
       .map((seat) => seat.seatno);
 
-    // Book each selected seat in backend
-    for (const seatno of selectedSeats) {
-      await bookSeatInBackend(seatno);
+    if (selectedSeats.length === 0) {
+      alert("Please select at least one seat");
+      return;
     }
 
-    const res = await fetch(`http://localhost:3000/api/booking/active/${play.id}`);
-  const data = await res.json();
-  setBookedSeats(data.bookedSeats.map((b) => b.seatno));
-
-  navigate("/Payment", {
-      state: { play, selectedDate, showTimes, selectedSeats },
+    // Navigate to payment page with selected seats (booking will be done after payment)
+    navigate("/payment", {
+      state: { play, selectedDate, showTimes, selectedSeats, user_id },
     });
   };
 

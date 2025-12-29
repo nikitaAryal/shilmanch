@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import InputField from '../components/InputField'
 import logoo from '../assets/shillpeelogo2.png'
 
@@ -11,17 +11,28 @@ export default function Register() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const { register, isAuthenticated } = useAuth()
+
+  // Redirect if already logged in
+  if (isAuthenticated) {
+    navigate('/', { replace: true })
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
     try {
-      await axios.post('/api/register', { username, email, password })
-      navigate('/login')
+      await register(username, email, password)
+      navigate('/')
     } catch (err) {
-      if (err.response) setError(err.response.data || 'Register failed')
-      else setError('Network error')
+      if (err.response?.data?.message) {
+        setError(err.response.data.message)
+      } else if (err.response?.data) {
+        setError(err.response.data)
+      } else {
+        setError('Network error')
+      }
     } finally {
       setLoading(false)
     }

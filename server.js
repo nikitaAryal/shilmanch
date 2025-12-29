@@ -1,10 +1,12 @@
 //server.js
 const express = require("express");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const db = require("./db");
 const QRCode = require("qrcode");
 const path = require("path");
 const crypto = require("crypto");
+const { authMiddleware, adminMiddleware } = require("./middleware/auth");
 const router = express.Router();
 
 
@@ -12,64 +14,132 @@ const router = express.Router();
 router.post("/register", async (req, res) => {
     console.log("Register endpoint hit");
     const { username, email, password } = req.body;
-    console.log("password",password);
+
+    if (!username || !email || !password) {
+        return res.status(400).json({ message: "Username, email, and password are required" });
+    }
+
     try {
+        // Check if email already exists
+        const [existingUser] = await db.promise().query(
+            "SELECT id FROM users WHERE email = ?", [email]
+        );
+
+        if (existingUser.length > 0) {
+            return res.status(409).json({ message: "Email already registered" });
+        }
+
         // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
-    
 
         // Insert the new user into the database
-        const query = "INSERT INTO users (username, email, password) VALUES (?, ?, ?)";
-        db.query(query, [username, email, hashedPassword], (err, result) => {
-            if (err) throw err;
-            res.status(201).json({ message: "User registered successfully", userId: result.insertId });
+        const [result] = await db.promise().query(
+            "INSERT INTO users (username, email, password) VALUES (?, ?, ?)",
+            [username, email, hashedPassword]
+        );
+
+        // Generate JWT token
+        const token = jwt.sign(
+            { userId: result.insertId, email, is_admin: false },
+            process.env.JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+
+        res.status(201).json({
+            message: "User registered successfully",
+            userId: result.insertId,
+            token,
+            user: { id: result.insertId, username, email, is_admin: false }
         });
     } catch (error) {
-        res.status(500).send("Error registering user");
+        console.error("Registration error:", error);
+        res.status(500).json({ message: "Error registering user" });
     }
 });
 
 // User login
-router.post('/login', (req, res) => {
-    console.log("here");
+router.post('/login', async (req, res) => {
     const { email, password } = req.body;
+
     if (!email || !password) {
-        return res.status(400).send('Email and password are required');
+        return res.status(400).json({ message: 'Email and password are required' });
     }
 
-    // Find the user by email
-    const query = 'SELECT * FROM users WHERE email = ?';
-    db.query(query, [email], async (err, results) => {
-        if (err) {
-            console.error('Database error:', err);
-            return res.status(500).send('Server error');
-        }
-        // 3. Check if user exists
+    try {
+        // Find the user by email
+        const [results] = await db.promise().query(
+            'SELECT * FROM users WHERE email = ?',
+            [email]
+        );
+
         if (results.length === 0) {
-            return res.status(404).send('User not found');
+            return res.status(404).json({ message: 'User not found' });
         }
 
         const user = results[0];
-        console.log("User ",user);
+
         if (!user.password) {
-            console.log("No hashed password stored for user:", email);
-            return res.status(500).send('Password not set for this account');
+            return res.status(500).json({ message: 'Password not set for this account' });
         }
 
-        try {
-            // ✅ 4. Compare passwords safely
-            const isMatch = await bcrypt.compare(password, user.password);
-            console.log("Password matched",isMatch);
-            if (isMatch) {
-                res.status(200).json({ message: 'Login successful', userId: user.id });
-            } else {
-                res.status(401).send('Invalid credentials');
-            }
-        } catch (compareError) {
-            console.error('Bcrypt error:', compareError);
-            res.status(500).send('Error checking password');
+        // Compare passwords
+        const isMatch = await bcrypt.compare(password, user.password);
+
+        if (!isMatch) {
+            return res.status(401).json({ message: 'Invalid credentials' });
         }
-    });
+
+        // Generate JWT token
+        const token = jwt.sign(
+            { userId: user.id, email: user.email, is_admin: user.is_admin || false },
+            process.env.JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+
+        res.status(200).json({
+            message: 'Login successful',
+            userId: user.id,
+            token,
+            user: {
+                id: user.id,
+                username: user.username,
+                email: user.email,
+                address: user.address,
+                is_admin: user.is_admin || false
+            }
+        });
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Verify token and get current user
+router.get('/auth/me', authMiddleware, async (req, res) => {
+    try {
+        const [results] = await db.promise().query(
+            'SELECT id, username, email, address, is_admin FROM users WHERE id = ?',
+            [req.user.userId]
+        );
+
+        if (results.length === 0) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const user = results[0];
+        res.status(200).json({
+            user: {
+                id: user.id,
+                username: user.username,
+                email: user.email,
+                address: user.address,
+                is_admin: user.is_admin || false
+            }
+        });
+    } catch (error) {
+        console.error('Auth/me error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
 });
 
 //User read

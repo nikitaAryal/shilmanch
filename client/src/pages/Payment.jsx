@@ -1,20 +1,74 @@
-import React from "react";
+import React, { useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { ordersAPI, bookingAPI } from "../services/api";
 import "./Payment.css";
 
 export default function Payment() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  // Destructure passed data from Seating.jsx
-  const { play, selectedDate, showTimes, selectedSeats, userId } = location.state || {};
+  const { play, selectedDate, showTimes, selectedSeats } = location.state || {};
 
-  const pricePerSeat = 500; // You can adjust this
+  const pricePerSeat = 500;
   const totalAmount = (selectedSeats?.length || 0) * pricePerSeat;
 
-  const [loading, setLoading] = React.useState(false);
+  const [loading, setLoading] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('cod');
 
-  
+  const handleCODPayment = async () => {
+    if (totalAmount <= 0) {
+      alert("Please select at least one seat before proceeding.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Create order with COD payment method
+      const orderResponse = await ordersAPI.create({
+        play_id: play.id,
+        show_date: selectedDate,
+        show_time: showTimes,
+        seats_json: selectedSeats,
+        user_id: user.id,
+        amount: totalAmount,
+        status: 'pending',
+        payment_method: 'cod',
+      });
+
+      const orderId = orderResponse.data.orderId;
+
+      // Create booking entries for each seat
+      for (const seatno of selectedSeats) {
+        await bookingAPI.create({
+          activeplay_id: play.id,
+          seatno,
+          user_id: user.id,
+          order_id: orderId,
+        });
+      }
+
+      // Navigate to confirmation page
+      navigate('/booking-confirmed', {
+        state: {
+          orderId,
+          play,
+          selectedDate,
+          showTimes,
+          selectedSeats,
+          totalAmount,
+          paymentMethod: 'cod'
+        }
+      });
+    } catch (error) {
+      console.error("Booking failed:", error);
+      alert("Booking failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleEsewaPayment = () => {
     if (totalAmount <= 0) {
       alert("Please select at least one seat before proceeding.");
@@ -25,15 +79,19 @@ export default function Payment() {
     window.location.href = `http://localhost:5000/pay-with-esewa?price=${totalAmount}`;
   };
 
+  const handlePayment = () => {
+    if (paymentMethod === 'cod') {
+      handleCODPayment();
+    } else {
+      handleEsewaPayment();
+    }
+  };
+
   if (!selectedSeats || selectedSeats.length === 0) {
     return (
       <div className="payment-empty">
-        <h2>
-          No seats selected!
-        </h2>
-        <Link to="/seating" className="text-green-600 hover:underline">
-          ← Go back to select seats
-        </Link>
+        <h2>No seats selected!</h2>
+        <Link to="/plays">← Go back to select a play</Link>
       </div>
     );
   }
@@ -41,24 +99,20 @@ export default function Payment() {
   return (
     <div className="payment-container">
       <div className="payment-card">
-        <h1 className="payment-title">
-          Confirm Your Booking
-        </h1>
+        <h1 className="payment-title">Confirm Your Booking</h1>
         <p className="payment-subtitle">
-          {play?.playname} — {selectedDate} — {showTimes}
+          {play?.playname} - {selectedDate} - {showTimes}
         </p>
 
         {/* Seats Display */}
         <div className="seats-section">
-          <h2>
-          🎟️ Selected Seats
-          </h2>
+          <h2>Selected Seats</h2>
           <ul className="seat-list">
             {selectedSeats.map((seat, index) => (
-              <li key={index} className="seat-item">🎟️ {seat}</li>
+              <li key={index} className="seat-item">{seat}</li>
             ))}
           </ul>
-          
+
           <div className="price-info">
             <div className="price-row">
               <span>Price per seat</span>
@@ -71,28 +125,63 @@ export default function Payment() {
           </div>
         </div>
 
+        {/* Payment Method Selection */}
+        <div className="payment-method-section">
+          <h2>Select Payment Method</h2>
+          <div className="payment-options">
+            <label className={`payment-option ${paymentMethod === 'cod' ? 'selected' : ''}`}>
+              <input
+                type="radio"
+                name="paymentMethod"
+                value="cod"
+                checked={paymentMethod === 'cod'}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+              />
+              <span className="option-content">
+                <strong>Cash on Delivery (COD)</strong>
+                <small>Pay at the venue before the show</small>
+              </span>
+            </label>
+            <label className={`payment-option ${paymentMethod === 'esewa' ? 'selected' : ''}`}>
+              <input
+                type="radio"
+                name="paymentMethod"
+                value="esewa"
+                checked={paymentMethod === 'esewa'}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+              />
+              <span className="option-content">
+                <strong>eSewa</strong>
+                <small>Pay online via eSewa</small>
+              </span>
+            </label>
+          </div>
+        </div>
+
         {/* Proceed Button */}
         <button
-          onClick={handleEsewaPayment}
+          onClick={handlePayment}
           disabled={loading}
-          className={`esewa-btn ${loading ? "loading" : ""}`}
+          className={`payment-btn ${loading ? "loading" : ""}`}
         >
-          {loading ? "Redirecting..." : "Proceed to eSewa"}
+          {loading ? "Processing..." : paymentMethod === 'cod' ? "Confirm Booking (COD)" : "Proceed to eSewa"}
         </button>
 
-        <p className="note-text">
-          You’ll be redirected to eSewa for secure payment.
-        </p>
+        {paymentMethod === 'cod' && (
+          <p className="note-text">
+            Please arrive 1 hour before the show and pay at the venue counter.
+          </p>
+        )}
+
+        {paymentMethod === 'esewa' && (
+          <p className="note-text">
+            You'll be redirected to eSewa for secure payment.
+          </p>
+        )}
 
         <button onClick={() => navigate(-1)} className="back-btn">
           ← Go Back
         </button>
-
-        <img
-          src="https://upload.wikimedia.org/wikipedia/en/9/9b/ESewa_Logo.png"
-          alt="eSewa Logo"
-          className="esewa-logo"
-        />
       </div>
     </div>
   );
