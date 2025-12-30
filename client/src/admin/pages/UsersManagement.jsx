@@ -4,6 +4,13 @@ import { usersAPI } from '../../services/api';
 export default function UsersManagement() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [editingUser, setEditingUser] = useState(null);
+  const [editForm, setEditForm] = useState({
+    username: '',
+    email: '',
+    address: '',
+  });
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     fetchUsers();
@@ -51,6 +58,68 @@ export default function UsersManagement() {
     }
   };
 
+  const openEditModal = (user) => {
+    setEditingUser(user);
+    setEditForm({
+      username: user.username,
+      email: user.email,
+      address: user.address || '',
+    });
+  };
+
+  const closeEditModal = () => {
+    setEditingUser(null);
+    setEditForm({ username: '', email: '', address: '' });
+    setErrors({});
+  };
+
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validateEditForm = () => {
+    const newErrors = {};
+
+    if (!editForm.username.trim()) {
+      newErrors.username = 'Username is required';
+    } else if (editForm.username.trim().length < 3) {
+      newErrors.username = 'Username must be at least 3 characters';
+    }
+
+    if (!editForm.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!validateEmail(editForm.email.trim())) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateEditForm()) {
+      return;
+    }
+
+    try {
+      await usersAPI.update(editingUser.id, {
+        username: editForm.username.trim(),
+        email: editForm.email.trim(),
+        password: editingUser.password || '',
+        address: editForm.address.trim(),
+        is_admin: editingUser.is_admin,
+      });
+      fetchUsers();
+      closeEditModal();
+      alert('User updated successfully');
+    } catch (error) {
+      console.error('Error updating user:', error);
+      alert('Failed to update user');
+    }
+  };
+
   if (loading) {
     return <div className="admin-loading"><div className="spinner"></div></div>;
   }
@@ -90,6 +159,12 @@ export default function UsersManagement() {
                   <td>
                     <div className="action-buttons">
                       <button
+                        className="btn btn-primary btn-sm"
+                        onClick={() => openEditModal(user)}
+                      >
+                        Edit
+                      </button>
+                      <button
                         className={`btn btn-sm ${user.is_admin ? 'btn-secondary' : 'btn-success'}`}
                         onClick={() => toggleAdminStatus(user)}
                       >
@@ -113,6 +188,63 @@ export default function UsersManagement() {
           </div>
         )}
       </div>
+
+      {/* Edit User Modal */}
+      {editingUser && (
+        <div className="modal-overlay" onClick={closeEditModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Edit User</h3>
+              <button className="modal-close" onClick={closeEditModal}>&times;</button>
+            </div>
+            <form onSubmit={handleEditSubmit}>
+              <div className="form-group">
+                <label>Username</label>
+                <input
+                  type="text"
+                  value={editForm.username}
+                  onChange={(e) => {
+                    setEditForm({ ...editForm, username: e.target.value });
+                    if (errors.username) setErrors({ ...errors, username: '' });
+                  }}
+                  className={errors.username ? 'input-error' : ''}
+                />
+                {errors.username && <span className="error-text">{errors.username}</span>}
+              </div>
+              <div className="form-group">
+                <label>Email</label>
+                <input
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => {
+                    setEditForm({ ...editForm, email: e.target.value });
+                    if (errors.email) setErrors({ ...errors, email: '' });
+                  }}
+                  className={errors.email ? 'input-error' : ''}
+                />
+                {errors.email && <span className="error-text">{errors.email}</span>}
+              </div>
+              <div className="form-group">
+                <label>Address</label>
+                <textarea
+                  value={editForm.address}
+                  onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                  rows="3"
+                  placeholder="Enter address"
+                />
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="btn btn-secondary" onClick={closeEditModal}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

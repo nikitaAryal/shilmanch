@@ -203,6 +203,29 @@
   color: #721c24;
 }
 
+/* Booking Status Row */
+.booking-status-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.btn-cancel-booking {
+  padding: 0.4rem 1rem;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.btn-cancel-booking:hover {
+  background-color: #c82333;
+}
+
 /* Logout Section */
 .logout-section {
   margin-top: 3rem;

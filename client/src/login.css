@@ -123,6 +123,24 @@
 .register-box button:hover {
   background: #574bff;
 }
+
+/* Form Validation Errors */
+.input-error {
+  border-color: #ef4444 !important;
+}
+
+.input-error:focus {
+  border-color: #ef4444 !important;
+  outline: none;
+}
+
+.field-error {
+  color: #ef4444;
+  font-size: 0.75rem;
+  margin: 4px 0 0 0;
+  text-align: left;
+}
+
 .signup-link{
   margin-top:15px;
   font-size: 14px;

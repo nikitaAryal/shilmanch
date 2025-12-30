@@ -8,6 +8,7 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
@@ -19,9 +20,38 @@ export default function Login() {
     navigate(from, { replace: true })
   }
 
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
+
+  const validateForm = () => {
+    const errors = {}
+
+    if (!email.trim()) {
+      errors.email = 'Email is required'
+    } else if (!validateEmail(email.trim())) {
+      errors.email = 'Please enter a valid email address'
+    }
+
+    if (!password) {
+      errors.password = 'Password is required'
+    } else if (password.length < 6) {
+      errors.password = 'Password must be at least 6 characters'
+    }
+
+    setFieldErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+
+    if (!validateForm()) {
+      return
+    }
+
     setLoading(true)
     try {
       const data = await login(email, password)
@@ -54,26 +84,37 @@ export default function Login() {
         </div>
         <h2>Login</h2>
       <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 8, maxWidth: 320 }}>
-        <InputField
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          name="email"
-          autoComplete="email"
-        />
-        <InputField
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          name="password"
-          autoComplete="current-password"
-        />
+        <div>
+          <InputField
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value)
+              if (fieldErrors.email) setFieldErrors({ ...fieldErrors, email: '' })
+            }}
+            name="email"
+            autoComplete="email"
+            className={fieldErrors.email ? 'input-error' : ''}
+          />
+          {fieldErrors.email && <p className="field-error">{fieldErrors.email}</p>}
+        </div>
+        <div>
+          <InputField
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value)
+              if (fieldErrors.password) setFieldErrors({ ...fieldErrors, password: '' })
+            }}
+            name="password"
+            autoComplete="current-password"
+            className={fieldErrors.password ? 'input-error' : ''}
+          />
+          {fieldErrors.password && <p className="field-error">{fieldErrors.password}</p>}
+        </div>
         <button type="submit" disabled={loading}>{loading ? 'Logging in...' : 'Login'}</button>
-
       </form>
       <div className='signup-link'>
         <p>Don't have an account?<a href="/Register">Sign Up</a></p>

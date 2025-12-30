@@ -80,6 +80,22 @@ const UserProfile = () => {
     }
   };
 
+  const handleCancelOrder = async (orderId) => {
+    if (!window.confirm('Are you sure you want to cancel this booking?')) return;
+
+    try {
+      await ordersAPI.update(orderId, { status: 'cancelled' });
+      // Update the orders list locally
+      setOrders(orders.map(order =>
+        order.id === orderId ? { ...order, status: 'cancelled' } : order
+      ));
+      alert('Booking cancelled successfully');
+    } catch (err) {
+      console.error('Error cancelling order:', err);
+      alert('Failed to cancel booking');
+    }
+  };
+
   if (loading) {
     return <div className="loading-container">Loading...</div>;
   }
@@ -147,10 +163,20 @@ const UserProfile = () => {
                     <strong>Date:</strong> {new Date(order.show_date).toLocaleDateString()} | <strong>Time:</strong> {order.show_time}
                   </p>
                   <p><strong>Seats:</strong> {JSON.parse(order.seats_json).join(", ")}</p>
-                  <p className="booking-amount">Amount: ₹{order.amount}</p>
-                  <span className={`status-badge ${getStatusClass(order.status)}`}>
-                    {order.status?.toUpperCase()}
-                  </span>
+                  <p className="booking-amount">Amount: Rs.{order.amount}</p>
+                  <div className="booking-status-row">
+                    <span className={`status-badge ${getStatusClass(order.status)}`}>
+                      {order.status?.toUpperCase()}
+                    </span>
+                    {order.status === 'pending' && (
+                      <button
+                        className="btn-cancel-booking"
+                        onClick={() => handleCancelOrder(order.id)}
+                      >
+                        Cancel Booking
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}

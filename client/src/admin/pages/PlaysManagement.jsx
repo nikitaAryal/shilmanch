@@ -18,6 +18,7 @@ export default function PlaysManagement() {
     description: '',
     image_url: '',
   });
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     fetchPlays();
@@ -42,13 +43,55 @@ export default function PlaysManagement() {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setErrors({ ...errors, image: 'Image must be less than 5MB' });
+        return;
+      }
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        setErrors({ ...errors, image: 'Only JPEG, PNG, GIF, or WebP images are allowed' });
+        return;
+      }
+      setErrors({ ...errors, image: '' });
       setImageFile(file);
       setImagePreview(URL.createObjectURL(file));
     }
   };
 
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.playname.trim()) {
+      newErrors.playname = 'Play name is required';
+    } else if (formData.playname.trim().length < 2) {
+      newErrors.playname = 'Play name must be at least 2 characters';
+    }
+
+    if (!formData.director.trim()) {
+      newErrors.director = 'Director name is required';
+    }
+
+    if (!formData.genre.trim()) {
+      newErrors.genre = 'Genre is required';
+    }
+
+    if (!formData.duration.trim()) {
+      newErrors.duration = 'Duration is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
     try {
       const submitData = new FormData();
       submitData.append('playname', formData.playname);
@@ -121,6 +164,7 @@ export default function PlaysManagement() {
   const closeModal = () => {
     setShowModal(false);
     setEditingPlay(null);
+    setErrors({});
   };
 
   if (loading) {
@@ -197,9 +241,13 @@ export default function PlaysManagement() {
                     type="text"
                     name="playname"
                     value={formData.playname}
-                    onChange={handleInputChange}
-                    required
+                    onChange={(e) => {
+                      handleInputChange(e);
+                      if (errors.playname) setErrors({ ...errors, playname: '' });
+                    }}
+                    className={errors.playname ? 'input-error' : ''}
                   />
+                  {errors.playname && <span className="error-text">{errors.playname}</span>}
                 </div>
                 <div className="form-group">
                   <label>Director</label>
@@ -207,9 +255,13 @@ export default function PlaysManagement() {
                     type="text"
                     name="director"
                     value={formData.director}
-                    onChange={handleInputChange}
-                    required
+                    onChange={(e) => {
+                      handleInputChange(e);
+                      if (errors.director) setErrors({ ...errors, director: '' });
+                    }}
+                    className={errors.director ? 'input-error' : ''}
                   />
+                  {errors.director && <span className="error-text">{errors.director}</span>}
                 </div>
                 <div className="form-group">
                   <label>Genre</label>
@@ -217,9 +269,13 @@ export default function PlaysManagement() {
                     type="text"
                     name="genre"
                     value={formData.genre}
-                    onChange={handleInputChange}
-                    required
+                    onChange={(e) => {
+                      handleInputChange(e);
+                      if (errors.genre) setErrors({ ...errors, genre: '' });
+                    }}
+                    className={errors.genre ? 'input-error' : ''}
                   />
+                  {errors.genre && <span className="error-text">{errors.genre}</span>}
                 </div>
                 <div className="form-group">
                   <label>Duration</label>
@@ -227,10 +283,14 @@ export default function PlaysManagement() {
                     type="text"
                     name="duration"
                     value={formData.duration}
-                    onChange={handleInputChange}
+                    onChange={(e) => {
+                      handleInputChange(e);
+                      if (errors.duration) setErrors({ ...errors, duration: '' });
+                    }}
                     placeholder="e.g., 2 hours"
-                    required
+                    className={errors.duration ? 'input-error' : ''}
                   />
+                  {errors.duration && <span className="error-text">{errors.duration}</span>}
                 </div>
                 <div className="form-group">
                   <label>Description</label>
@@ -247,8 +307,9 @@ export default function PlaysManagement() {
                     type="file"
                     accept="image/*"
                     onChange={handleImageChange}
-                    className="file-input"
+                    className={`file-input ${errors.image ? 'input-error' : ''}`}
                   />
+                  {errors.image && <span className="error-text">{errors.image}</span>}
                   {imagePreview && (
                     <div className="image-preview" style={{ marginTop: '10px' }}>
                       <img
