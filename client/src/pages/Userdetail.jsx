@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { usersAPI, ordersAPI } from "../services/api";
+import "./userdetail.css";
 
 const UserProfile = () => {
   const [userData, setUserData] = useState(null);
@@ -66,41 +67,51 @@ const UserProfile = () => {
     navigate("/login");
   };
 
+  const getStatusClass = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'paid':
+        return 'status-paid';
+      case 'pending':
+        return 'status-pending';
+      case 'cancelled':
+        return 'status-cancelled';
+      default:
+        return 'status-pending';
+    }
+  };
+
   if (loading) {
-    return <div className="p-8 text-center">Loading...</div>;
+    return <div className="loading-container">Loading...</div>;
   }
 
   if (!userData) {
-    return <div className="p-8 text-center">User not found</div>;
+    return <div className="loading-container">User not found</div>;
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 mt-10">
-      <h1 className="text-3xl font-bold mb-8">My Account</h1>
+    <div className="user-profile">
+      <h1>My Account</h1>
 
       {/* Account Information Section */}
-      <div className="bg-white shadow rounded-lg p-6 mb-8">
-        <h2 className="text-2xl font-semibold mb-4">Account Information</h2>
+      <div className="account-card">
+        <h2>Account Information</h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Username</label>
-            <p className="mt-1 text-lg">{userData.username}</p>
+        <div className="info-grid">
+          <div className="info-item">
+            <label>Username</label>
+            <p>{userData.username}</p>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Email</label>
-            <p className="mt-1 text-lg">{userData.email}</p>
+          <div className="info-item">
+            <label>Email</label>
+            <p>{userData.email}</p>
           </div>
         </div>
 
-        <div className="mb-6">
-          <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-            Address
-          </label>
+        <div className="address-section">
+          <label htmlFor="address">Address</label>
           <textarea
             id="address"
             rows="3"
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3 border"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             placeholder="Enter your address (optional)"
@@ -108,7 +119,7 @@ const UserProfile = () => {
           <button
             onClick={handleAddressUpdate}
             disabled={saving || address.trim() === (userData.address || "")}
-            className="mt-3 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:bg-gray-400"
+            className="btn-save"
           >
             {saving ? "Saving..." : "Save Address"}
           </button>
@@ -116,35 +127,29 @@ const UserProfile = () => {
       </div>
 
       {/* Booking History Section */}
-      <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-2xl font-semibold mb-4">Booking History</h2>
+      <div className="bookings-card">
+        <h2>Booking History</h2>
 
         {orders.length === 0 ? (
-          <p className="text-gray-500">No bookings yet.</p>
+          <p className="no-bookings">No bookings yet.</p>
         ) : (
-          <div className="space-y-4">
+          <div className="bookings-list">
             {orders.map((order) => (
-              <div key={order.id} className="border rounded-lg p-4 flex items-center gap-6">
+              <div key={order.id} className="booking-item">
                 <img
-                  src={order.image_url || "/placeholder-play.jpg"}
+                  src={order.image_url ? `/api/${order.image_url}` : "/placeholder-play.jpg"}
                   alt={order.playname}
-                  className="w-24 h-32 object-cover rounded"
+                  className="booking-image"
                 />
-                <div className="flex-1">
-                  <h3 className="text-xl font-medium">{order.playname}</h3>
-                  <p className="text-gray-600">
-                    Date: {new Date(order.show_date).toLocaleDateString()} | Time: {order.show_time}
+                <div className="booking-details">
+                  <h3>{order.playname}</h3>
+                  <p>
+                    <strong>Date:</strong> {new Date(order.show_date).toLocaleDateString()} | <strong>Time:</strong> {order.show_time}
                   </p>
-                  <p className="text-gray-600">Seats: {JSON.parse(order.seats_json).join(", ")}</p>
-                  <p className="text-gray-600">Amount: ₹{order.amount}</p>
-                  <span
-                    className={`inline-block mt-2 px-3 py-1 text-sm rounded-full ${
-                      order.status === "paid"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-yellow-100 text-yellow-800"
-                    }`}
-                  >
-                    {order.status.toUpperCase()}
+                  <p><strong>Seats:</strong> {JSON.parse(order.seats_json).join(", ")}</p>
+                  <p className="booking-amount">Amount: ₹{order.amount}</p>
+                  <span className={`status-badge ${getStatusClass(order.status)}`}>
+                    {order.status?.toUpperCase()}
                   </span>
                 </div>
               </div>
@@ -154,11 +159,8 @@ const UserProfile = () => {
       </div>
 
       {/* Logout Button */}
-      <div className="mt-10 text-center">
-        <button
-          onClick={handleLogout}
-          className="px-6 py-3 bg-red-600 text-white rounded hover:bg-red-700 text-lg"
-        >
+      <div className="logout-section">
+        <button onClick={handleLogout} className="btn-logout">
           Log Out
         </button>
       </div>

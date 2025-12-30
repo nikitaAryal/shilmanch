@@ -6,8 +6,35 @@ const db = require("./db");
 const QRCode = require("qrcode");
 const path = require("path");
 const crypto = require("crypto");
+const multer = require("multer");
 const { authMiddleware, adminMiddleware } = require("./middleware/auth");
 const router = express.Router();
+
+// Multer configuration for image uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.join(__dirname, "pictures"));
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
+const upload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    if (extname && mimetype) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only image files are allowed"));
+    }
+  },
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+});
 
 
 // Register a new user
@@ -215,17 +242,23 @@ router.delete("/user/:id", async (req, res) => {
   });
 
   //create play
-router.post("/createplay", (req, res) => {
-  console.log("Register endpoint hit");
+router.post("/createplay", upload.single("image"), (req, res) => {
+  console.log("Create play endpoint hit");
   const { playname, director, duration, genre, added_by, description, image_url } = req.body;
 
+  // Use uploaded file path or provided image_url
+  const finalImageUrl = req.file ? `pictures/${req.file.filename}` : (image_url || null);
+
+  // Parse added_by as integer (user ID) or null
+  const addedById = added_by && added_by !== 'null' ? parseInt(added_by, 10) : null;
+
   const query = "INSERT INTO plays (playname, director, duration, genre, added_by, description, image_url) VALUES (?, ?, ?, ?, ?, ?, ?)";
-  db.query(query, [playname, director, duration, genre, added_by, description, image_url], (err, result) => {
+  db.query(query, [playname, director, duration, genre, addedById, description, finalImageUrl], (err, result) => {
     if (err) {
       console.error("Database error:", err);
-      return res.status(500).send("Error creating play");
+      return res.status(500).json({ message: "Error creating play", error: err.message });
     }
-    res.status(201).send("Play created successfully");
+    res.status(201).json({ message: "Play created successfully", playId: result.insertId });
   });
 });
 
@@ -272,21 +305,29 @@ router.get("/plays", async (req, res) => {
 
 
 //play U
-router.patch("/play/:id", async (req, res) => {
+router.patch("/play/:id", upload.single("image"), async (req, res) => {
   try {
     const { id } = req.params;
     const { playname, director, genre, duration, added_by, description, image_url } = req.body;
+
+    // Use uploaded file path or provided image_url
+    const finalImageUrl = req.file ? `pictures/${req.file.filename}` : (image_url || null);
+
+    // Parse added_by as integer (user ID) or null
+    const addedById = added_by && added_by !== 'null' ? parseInt(added_by, 10) : null;
+
     await db.promise().query(
         `UPDATE plays set playname = ?, director = ?, genre = ?, duration = ?, added_by = ?, description = ?, image_url = ? where id = ?`,
-        [ playname, director, genre, duration, added_by, description, image_url, id]
+        [ playname, director, genre, duration, addedById, description, finalImageUrl, id]
       );
-    
+
     res.status(200).json({
       message: "updated",
     });
   } catch (err) {
+    console.error("Error updating play:", err);
     res.status(500).json({
-      message: err,
+      message: err.message || "Failed to update play",
     });
   }
 });
@@ -557,9 +598,10 @@ router.post("/orders", async (req, res) => {
 
   try {
     const seatsStr = Array.isArray(seats_json) ? JSON.stringify(seats_json) : seats_json;
+    const uuid = transaction_uuid || crypto.randomUUID();
 
     const [result] = await db.promise().query(
-      `INSERT INTO orders 
+      `INSERT INTO orders
        (play_id, show_date, show_time, seats_json, user_id, amount, transaction_uuid, status, payment_id, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
       [
@@ -569,7 +611,7 @@ router.post("/orders", async (req, res) => {
         seatsStr,
         user_id,
         amount,
-        transaction_uuid || null,
+        uuid,
         status,
         payment_id || null,
       ]
@@ -578,6 +620,7 @@ router.post("/orders", async (req, res) => {
     res.status(201).json({
       message: "Order created successfully",
       orderId: result.insertId,
+      transaction_uuid: uuid,
     });
   } catch (err) {
     console.error("Error creating order:", err);

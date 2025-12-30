@@ -29,8 +29,8 @@ const PastPlay = () => {
     return(
         <div className="past-container">
             <div className="past-header">
-                <img 
-                src={`http://localhost:3000/api/${play.image_url}`}
+                <img
+                src={`/api/${play.image_url}`}
                 alt={play.playname}
                 className="play-image"
                 />

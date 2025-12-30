@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
 import { playsAPI } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 export default function PlaysManagement() {
+  const { user } = useAuth();
   const [plays, setPlays] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingPlay, setEditingPlay] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   const [formData, setFormData] = useState({
     playname: '',
     director: '',
@@ -13,7 +17,6 @@ export default function PlaysManagement() {
     genre: '',
     description: '',
     image_url: '',
-    added_by: 'Admin',
   });
 
   useEffect(() => {
@@ -36,13 +39,35 @@ export default function PlaysManagement() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const submitData = new FormData();
+      submitData.append('playname', formData.playname);
+      submitData.append('director', formData.director);
+      submitData.append('duration', formData.duration);
+      submitData.append('genre', formData.genre);
+      submitData.append('description', formData.description);
+      submitData.append('added_by', user?.id || null);
+
+      if (imageFile) {
+        submitData.append('image', imageFile);
+      } else if (formData.image_url) {
+        submitData.append('image_url', formData.image_url);
+      }
+
       if (editingPlay) {
-        await playsAPI.update(editingPlay.id, formData);
+        await playsAPI.update(editingPlay.id, submitData);
       } else {
-        await playsAPI.create(formData);
+        await playsAPI.create(submitData);
       }
       fetchPlays();
       closeModal();
@@ -61,8 +86,9 @@ export default function PlaysManagement() {
       genre: play.genre,
       description: play.description || '',
       image_url: play.image_url || '',
-      added_by: play.added_by || 'Admin',
     });
+    setImageFile(null);
+    setImagePreview(play.image_url ? `/api/${play.image_url}` : null);
     setShowModal(true);
   };
 
@@ -86,8 +112,9 @@ export default function PlaysManagement() {
       genre: '',
       description: '',
       image_url: '',
-      added_by: 'Admin',
     });
+    setImageFile(null);
+    setImagePreview(null);
     setShowModal(true);
   };
 
@@ -215,14 +242,22 @@ export default function PlaysManagement() {
                   />
                 </div>
                 <div className="form-group">
-                  <label>Image URL</label>
+                  <label>Play Image</label>
                   <input
-                    type="text"
-                    name="image_url"
-                    value={formData.image_url}
-                    onChange={handleInputChange}
-                    placeholder="pictures/play.jpg"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="file-input"
                   />
+                  {imagePreview && (
+                    <div className="image-preview" style={{ marginTop: '10px' }}>
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        style={{ maxWidth: '200px', maxHeight: '150px', objectFit: 'cover', borderRadius: '4px' }}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="modal-footer">
