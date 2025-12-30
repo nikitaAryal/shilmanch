@@ -268,7 +268,7 @@ router.get("/play/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const [playData] = await db.promise().query(
-      `SELECT p.*, a.start_date, a.end_date, a.time
+      `SELECT p.*, a.id AS activeplay_id, a.start_date, a.end_date, a.time
        FROM plays p
        LEFT JOIN active_play a ON p.id = a.play_id
        WHERE p.id = ?`,

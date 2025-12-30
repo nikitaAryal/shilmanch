@@ -20,11 +20,11 @@ const Seating = () => {
 
   // Fetch booked seats from backend
   useEffect(() => {
-    if (!play?.id) return;
+    if (!play?.activeplay_id) return;
 
     const fetchBookedSeats = async () => {
       try {
-        const response = await bookingAPI.getBookedSeats(play.id);
+        const response = await bookingAPI.getBookedSeats(play.activeplay_id);
         const booked = response.data.bookedSeats.map((b) => b.seatno);
         setBookedSeats(booked);
       } catch (error) {
@@ -33,7 +33,7 @@ const Seating = () => {
     };
 
     fetchBookedSeats();
-  }, [play?.id]);
+  }, [play?.activeplay_id]);
 
   // Initialize seat layout with booked seats marked
   useEffect(() => {

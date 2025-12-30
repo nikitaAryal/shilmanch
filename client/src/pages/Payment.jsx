@@ -42,7 +42,7 @@ export default function Payment() {
       // Create booking entries for each seat
       for (const seatno of selectedSeats) {
         await bookingAPI.create({
-          activeplay_id: play.id,
+          activeplay_id: play.activeplay_id,
           seatno,
           user_id: user.id,
           order_id: orderId,
