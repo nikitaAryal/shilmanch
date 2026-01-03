@@ -525,6 +525,30 @@ router.patch("/booking/:id", async (req, res) => {
   }
 });
 
+router.delete("/active-play/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // 1️⃣ delete bookings first
+    await db.promise().query(
+      "DELETE FROM booking WHERE activeplay_id = ?",
+      [id]
+    );
+
+    // 2️⃣ delete schedule
+    await db.promise().query(
+      "DELETE FROM active_play WHERE id = ?",
+      [id]
+    );
+
+    res.json({ message: "Schedule deleted" });
+  } catch (err) {
+    console.error("Delete schedule error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 // server.js (continued – add this at the end of your existing file)
 
 

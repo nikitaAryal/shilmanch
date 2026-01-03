@@ -63,7 +63,7 @@ export default function SchedulesManagement() {
   const handleEdit = (schedule) => {
     setEditingSchedule(schedule);
     setFormData({
-      play_id: schedule.play_id || schedule.id,
+      play_id: schedule.play_id ,
       start_date: schedule.start_date?.split('T')[0] || '',
       end_date: schedule.end_date?.split('T')[0] || '',
       time: schedule.time || '',
