@@ -138,7 +138,7 @@ export default function OrdersManagement() {
                   </td>
                   <td>
                     <div className="action-buttons">
-                      {order.status === 'pending' && (
+                      {order.status === 'PENDING' && (
                         <>
                           <button
                             className="btn btn-success btn-sm"
@@ -154,12 +154,12 @@ export default function OrdersManagement() {
                           </button>
                         </>
                       )}
-                      {order.status === 'paid' && (
+                      {order.status === 'PAID' && (
                         <span style={{ color: '#10b981', fontSize: '0.875rem' }}>
                           Payment Confirmed
                         </span>
                       )}
-                      {order.status === 'cancelled' && (
+                      {order.status === 'CANCELLED' && (
                         <span style={{ color: '#ef4444', fontSize: '0.875rem' }}>
                           Cancelled
                         </span>

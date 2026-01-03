@@ -7,11 +7,13 @@ import Header from './components/Header'
 import Footer from './components/Footer'
 import Plays from './pages/Plays'
 import Tickets from './pages/Tickets'
-import Seating from './pages/seating'
+import Seating from './pages/Seating'
 import Payment from './pages/Payment'
 import BookingConfirmed from './pages/BookingConfirmed'
 import UserProfile from './pages/Userdetail'
 import ProtectedRoute from './components/ProtectedRoute'
+import PaymentSuccess from './pages/PaymentSuccess'
+import PaymentCancel from './pages/PaymentCancel'
 
 // Admin imports
 import AdminLayout from './admin/AdminLayout'
@@ -57,6 +59,9 @@ export default function App() {
             <UserProfile />
           </ProtectedRoute>
         } />
+        <Route path="/payment/success" element={<PaymentSuccess />} />
+        <Route path="/payment/cancel" element={<PaymentCancel />} />
+
 
         {/* Admin routes */}
         <Route path="/admin" element={

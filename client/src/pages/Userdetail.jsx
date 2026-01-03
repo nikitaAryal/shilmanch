@@ -168,7 +168,7 @@ const UserProfile = () => {
                     <span className={`status-badge ${getStatusClass(order.status)}`}>
                       {order.status?.toUpperCase()}
                     </span>
-                    {order.status === 'pending' && (
+                    {order.status === 'PENDING' && (
                       <button
                         className="btn-cancel-booking"
                         onClick={() => handleCancelOrder(order.id)}

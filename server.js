@@ -10,6 +10,7 @@ const multer = require("multer");
 const { authMiddleware, adminMiddleware } = require("./middleware/auth");
 const router = express.Router();
 
+
 // Multer configuration for image uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -744,6 +745,113 @@ router.post("/webhook/payment-success", async (req, res) => {
     res.status(500).json({ message: "Webhook failed" });
   }
 });
+
+
+const axios = require("axios");
+const { getAccessToken, PAYPAL_BASE } = require("./paypal");
+
+router.post("/paypal/create-order", async (req, res) => {
+  try {
+    const { play_id, activeplay_id, seats, price, user_id } = req.body;
+
+    const total = (seats.length * price).toFixed(2);
+    const token = await getAccessToken();
+
+    const order = await axios.post(
+      `${PAYPAL_BASE}/v2/checkout/orders`,
+      {
+        intent: "CAPTURE",
+        purchase_units: [{
+          amount: {
+            currency_code: "USD",
+            value: total
+          },
+          description: `Play ${play_id} | Seats ${seats.join(", ")}`
+        }]
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+
+    // Save pending order
+    const [result] = await db.promise().query(
+      `INSERT INTO orders 
+      (play_id, seats_json, user_id, amount, status, transaction_uuid)
+      VALUES (?, ?, ?, ?, 'pending', ?)`,
+      [play_id, JSON.stringify(seats), user_id, total, order.data.id]
+    );
+
+    res.json({
+      approvalUrl: order.data.links.find(l => l.rel === "approve").href,
+      orderId: result.insertId,
+      paypalOrderId: order.data.id
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "PayPal order creation failed" });
+  }
+});
+
+router.post("/paypal/capture", async (req, res) => {
+  try {
+    const { paypalOrderId, orderId, activeplay_id } = req.body;
+    const token = await getAccessToken();
+
+    const capture = await axios.post(
+      `${PAYPAL_BASE}/v2/checkout/orders/${paypalOrderId}/capture`,
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    if (capture.data.status !== "COMPLETED") {
+      return res.status(400).json({ message: "Payment not completed" });
+    }
+
+    // 1️⃣ Mark order paid
+    await db.promise().query(
+      `UPDATE orders SET status='paid', paid_at=NOW() WHERE id=?`,
+      [orderId]
+    );
+
+    // 2️⃣ Create bookings
+    const [[order]] = await db.promise().query(
+      `SELECT * FROM orders WHERE id=?`, [orderId]
+    );
+
+    const seats = JSON.parse(order.seats_json);
+
+    for (const seat of seats) {
+      const qr = await QRCode.toDataURL(
+        `${order.id}-${seat}-${order.user_id}`
+      );
+
+      await db.promise().query(
+        `INSERT INTO bookings 
+        (activeplay_id, seatno, payment_id, user_id, qr_code, order_id)
+        VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          activeplay_id,
+          seat,
+          capture.data.id,
+          order.user_id,
+          qr,
+          order.id
+        ]
+      );
+    }
+
+    res.json({ message: "Payment successful & seats booked" });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Payment capture failed" });
+  }
+});
+
 
 
 
