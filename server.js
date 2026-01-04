@@ -831,8 +831,8 @@ router.post("/paypal/create-order", async (req, res) => {
     });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "PayPal order creation failed" });
+    console.error("PayPal create-order error:", err.response?.data || err.message || err);
+    res.status(500).json({ message: "PayPal order creation failed", error: err.message });
   }
 });
 
