@@ -52,6 +52,12 @@
   cursor: not-allowed;
 }
 
+.seat.reserved {
+  background-color: #FF8C00; /* Orange - pending payment */
+  color: white;
+  cursor: not-allowed;
+}
+
 .seat.selected {
   background-color: #FFD700; /* Yellow */
   color: black;

@@ -14,28 +14,31 @@ const Seating = () => {
   const cols = 10;
   const [seats, setSeats] = useState([]);
   const [bookedSeats, setBookedSeats] = useState([]);
+  const [reservedSeats, setReservedSeats] = useState([]);
 
   const user_id = user?.id;
   const payment_id = null;
 
-  // Fetch booked seats from backend
+  // Fetch booked and reserved seats from backend
   useEffect(() => {
-    if (!play?.activeplay_id) return;
+    if (!play?.activeplay_id || !selectedDate) return;
 
     const fetchBookedSeats = async () => {
       try {
-        const response = await bookingAPI.getBookedSeats(play.activeplay_id);
-        const booked = response.data.bookedSeats.map((b) => b.seatno);
+        const response = await bookingAPI.getBookedSeats(play.activeplay_id, selectedDate);
+        const booked = response.data.bookedSeats?.map((b) => b.seatno) || [];
+        const reserved = response.data.reservedSeats?.map((b) => b.seatno) || [];
         setBookedSeats(booked);
+        setReservedSeats(reserved);
       } catch (error) {
         console.error("Error fetching booked seats:", error);
       }
     };
 
     fetchBookedSeats();
-  }, [play?.activeplay_id]);
+  }, [play?.activeplay_id, selectedDate]);
 
-  // Initialize seat layout with booked seats marked
+  // Initialize seat layout with booked and reserved seats marked
   useEffect(() => {
     const initialSeats = [];
     for (let r = 0; r < rows; r++) {
@@ -44,12 +47,13 @@ const Seating = () => {
         const seatno = `Row ${r + 1} - Seat ${c + 1}`;
         let status = "available";
         if (bookedSeats.includes(seatno)) status = "booked";
+        else if (reservedSeats.includes(seatno)) status = "reserved";
         rowSeats.push({ row: r, col: c, seatno, status });
       }
       initialSeats.push(rowSeats);
     }
     setSeats(initialSeats);
-  }, [bookedSeats]);
+  }, [bookedSeats, reservedSeats]);
 
   const handleSeatClick = (row, col) => {
     setSeats((prev) =>
@@ -104,7 +108,7 @@ const Seating = () => {
                 key={cIndex}
                 className={`seat ${seat.status}`}
                 onClick={() =>
-                  seat.status !== "booked" && handleSeatClick(seat.row, seat.col)
+                  seat.status !== "booked" && seat.status !== "reserved" && handleSeatClick(seat.row, seat.col)
                 }
               >
                 🪑
@@ -118,6 +122,9 @@ const Seating = () => {
       <div className="legend">
         <div>
           <div className="seat available"></div> Available
+        </div>
+        <div>
+          <div className="seat reserved"></div> Reserved
         </div>
         <div>
           <div className="seat booked"></div> Booked

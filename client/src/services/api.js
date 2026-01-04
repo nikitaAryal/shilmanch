@@ -67,7 +67,7 @@ export const bookingAPI = {
   create: (data) => api.post('/booking', data),
   getAll: () => api.get('/bookingrw'),
   getById: (id) => api.get(`/bookingrs/${id}`),
-  getBookedSeats: (activePlayId) => api.get(`/booking/active/${activePlayId}`),
+  getBookedSeats: (activePlayId, date) => api.get(`/booking/active/${activePlayId}`, { params: { date } }),
   update: (id, data) => api.patch(`/booking/${id}`, data),
 };
 

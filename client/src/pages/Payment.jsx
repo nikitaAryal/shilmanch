@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { ordersAPI, bookingAPI } from "../services/api";
+import api, { ordersAPI, bookingAPI } from "../services/api";
 import "./Payment.css";
-import axios from "axios";
 
 
 export default function Payment() {
@@ -48,6 +47,7 @@ export default function Payment() {
           seatno,
           user_id: user.id,
           order_id: orderId,
+          show_date: selectedDate,
         });
       }
 
@@ -82,17 +82,15 @@ export default function Payment() {
   };
   
   const handlePayPalPayment = async () => {
-  if (totalAmount <= 0) {
-    alert("Please select at least one seat");
-    return;
-  }
+    if (totalAmount <= 0) {
+      alert("Please select at least one seat");
+      return;
+    }
 
-  setLoading(true);
+    setLoading(true);
 
-  try {
-    const res = await axios.post(
-      "http://localhost:5000/api/paypal/create-order",
-      {
+    try {
+      const res = await api.post("/paypal/create-order", {
         play_id: play.id,
         activeplay_id: play.activeplay_id,
         show_date: selectedDate,
@@ -100,25 +98,19 @@ export default function Payment() {
         seats: selectedSeats,
         amount: totalAmount,
         user_id: user.id,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      }
-    );
+      });
 
-    // 🔥 IMPORTANT: store order reference
-    localStorage.setItem("paypal_order_id", res.data.orderId);
+      // Store order reference for capture
+      localStorage.setItem("paypal_order_id", res.data.orderId);
 
-    // Redirect user to PayPal
-    window.location.href = res.data.approvalUrl;
-  } catch (err) {
-    console.error(err);
-    alert("Failed to initiate PayPal payment");
-    setLoading(false);
-  }
-};
+      // Redirect user to PayPal
+      window.location.href = res.data.approvalUrl;
+    } catch (err) {
+      console.error(err);
+      alert("Failed to initiate PayPal payment");
+      setLoading(false);
+    }
+  };
 
   const handlePayment = () => {
   if (paymentMethod === "cod") {
@@ -186,33 +178,19 @@ export default function Payment() {
                 <small>Pay at the venue before the show</small>
               </span>
             </label>
-            <label className={`payment-option ${paymentMethod === 'esewa' ? 'selected' : ''}`}>
+            <label className={`payment-option ${paymentMethod === 'paypal' ? 'selected' : ''}`}>
               <input
                 type="radio"
                 name="paymentMethod"
-                value="esewa"
-                checked={paymentMethod === 'esewa'}
+                value="paypal"
+                checked={paymentMethod === 'paypal'}
                 onChange={(e) => setPaymentMethod(e.target.value)}
               />
               <span className="option-content">
-                <strong>eSewa</strong>
-                <small>Pay online via eSewa</small>
+                <strong>PayPal</strong>
+                <small>Pay securely using PayPal</small>
               </span>
             </label>
-            <label className={`payment-option ${paymentMethod === 'paypal' ? 'selected' : ''}`}>
-  <input
-    type="radio"
-    name="paymentMethod"
-    value="paypal"
-    checked={paymentMethod === 'paypal'}
-    onChange={(e) => setPaymentMethod(e.target.value)}
-  />
-  <span className="option-content">
-    <strong>PayPal</strong>
-    <small>Pay securely using PayPal</small>
-  </span>
-</label>
-
           </div>
         </div>
 
@@ -222,7 +200,7 @@ export default function Payment() {
           disabled={loading}
           className={`payment-btn ${loading ? "loading" : ""}`}
         >
-          {loading ? "Processing..." : paymentMethod === 'cod' ? "Confirm Booking (COD)" : "Proceed to eSewa"}
+          {loading ? "Processing..." : paymentMethod === 'cod' ? "Confirm Booking (COD)" : paymentMethod === 'paypal' ? "Proceed to PayPal" : "Proceed to eSewa"}
         </button>
 
         {paymentMethod === 'cod' && (
