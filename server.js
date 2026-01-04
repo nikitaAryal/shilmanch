@@ -370,7 +370,7 @@ router.post("/createacplay", (req, res) => {
 router.get("/active_play", async (req, res) => {
   try {
     const [rows] = await db.promise().query(`
-      SELECT p.*, a.start_date, a.end_date, a.time
+      SELECT a.id, p.id AS play_id, p.playname, p.director, p.duration, p.genre, p.description, p.image_url, a.start_date, a.end_date, a.time, a.total_occupancy
       FROM plays p
       INNER JOIN active_play a ON p.id = a.play_id
       WHERE CURDATE() BETWEEN a.start_date AND a.end_date
