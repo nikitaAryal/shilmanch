@@ -27,8 +27,8 @@ export default function Dashboard() {
         const plays = playsRes.data || [];
         const orders = ordersRes.data || [];
 
-        const pendingOrders = orders.filter(o => o.status === 'pending').length;
-        const paidOrders = orders.filter(o => o.status === 'paid');
+        const pendingOrders = orders.filter(o => o.status === 'PENDING').length;
+        const paidOrders = orders.filter(o => o.status === 'PAID');
         const totalRevenue = paidOrders.reduce((sum, o) => sum + (o.amount || 0), 0);
 
         setStats({

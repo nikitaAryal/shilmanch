@@ -26,7 +26,7 @@ export default function OrdersManagement() {
 
     try {
       await ordersAPI.update(orderId, {
-        status: 'paid',
+        status: 'PAID',
         paid_at: new Date().toISOString(),
       });
       fetchOrders();
@@ -40,7 +40,7 @@ export default function OrdersManagement() {
     if (!window.confirm('Are you sure you want to cancel this order?')) return;
 
     try {
-      await ordersAPI.update(orderId, { status: 'cancelled' });
+      await ordersAPI.update(orderId, { status: 'CANCELLED' });
       fetchOrders();
     } catch (error) {
       console.error('Error cancelling order:', error);
@@ -186,15 +186,15 @@ export default function OrdersManagement() {
           </div>
           <div className="stat-card warning">
             <h3>Pending</h3>
-            <div className="value">{orders.filter(o => o.status === 'pending').length}</div>
+            <div className="value">{orders.filter(o => o.status === 'PENDING').length}</div>
           </div>
           <div className="stat-card success">
             <h3>Paid</h3>
-            <div className="value">{orders.filter(o => o.status === 'paid').length}</div>
+            <div className="value">{orders.filter(o => o.status === 'PAID').length}</div>
           </div>
           <div className="stat-card danger">
             <h3>Cancelled</h3>
-            <div className="value">{orders.filter(o => o.status === 'cancelled').length}</div>
+            <div className="value">{orders.filter(o => o.status === 'CANCELLED').length}</div>
           </div>
         </div>
       </div>

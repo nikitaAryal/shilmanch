@@ -29,12 +29,13 @@ export default function Payment() {
       // Create order with COD payment method
       const orderResponse = await ordersAPI.create({
         play_id: play.id,
+        activeplay_id: play.activeplay_id,
         show_date: selectedDate,
         show_time: showTimes,
         seats_json: selectedSeats,
         user_id: user.id,
         amount: totalAmount,
-        status: 'pending',
+        status: 'PENDING',
         payment_method: 'cod',
       });
 

@@ -504,8 +504,8 @@ router.get("/booking/active/:id", async (req, res) => {
     );
 
     // Separate booked (paid) and reserved (pending) seats
-    const bookedSeats = rows.filter(r => r.status === 'paid').map(r => ({ seatno: r.seatno }));
-    const reservedSeats = rows.filter(r => r.status === 'pending').map(r => ({ seatno: r.seatno }));
+    const bookedSeats = rows.filter(r => r.status === 'PAID').map(r => ({ seatno: r.seatno }));
+    const reservedSeats = rows.filter(r => r.status === 'PENDING').map(r => ({ seatno: r.seatno }));
 
     res.status(200).json({ bookedSeats, reservedSeats });
   } catch (err) {
@@ -621,14 +621,16 @@ router.get("/payments/:id", async (req, res) => {
 router.post("/orders", async (req, res) => {
   const {
     play_id,
+    activeplay_id,
     show_date,
     show_time,
     seats_json,        // e.g., ["A1", "A2"] or JSON string
     user_id,
     amount,
     transaction_uuid,  // optional unique identifier
-    status = "pending",
+    status = "PENDING",
     payment_id,
+    payment_method = "cod",
   } = req.body;
 
   try {
@@ -637,10 +639,11 @@ router.post("/orders", async (req, res) => {
 
     const [result] = await db.promise().query(
       `INSERT INTO orders
-       (play_id, show_date, show_time, seats_json, user_id, amount, transaction_uuid, status, payment_id, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+       (play_id, activeplay_id, show_date, show_time, seats_json, user_id, amount, transaction_uuid, status, payment_id, payment_method, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
       [
         play_id,
+        activeplay_id || null,
         show_date,
         show_time,
         seatsStr,
@@ -649,6 +652,7 @@ router.post("/orders", async (req, res) => {
         uuid,
         status,
         payment_id || null,
+        payment_method,
       ]
     );
 
@@ -767,7 +771,7 @@ router.post("/webhook/payment-success", async (req, res) => {
 
     // 2. Update order status and link payment
     await db.promise().query(
-      `UPDATE orders SET status = 'paid', payment_id = ?, paid_at = NOW() WHERE id = ?`,
+      `UPDATE orders SET status = 'PAID', payment_id = ?, paid_at = NOW() WHERE id = ?`,
       [payment_id, order_id]
     );
 
@@ -815,7 +819,7 @@ router.post("/paypal/create-order", async (req, res) => {
     const [result] = await db.promise().query(
       `INSERT INTO orders
       (play_id, activeplay_id, show_date, show_time, seats_json, user_id, amount, status, transaction_uuid, payment_method)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, 'paypal')`,
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING', ?, 'paypal')`,
       [play_id, activeplay_id, show_date, show_time, JSON.stringify(seats), user_id, amount, order.data.id]
     );
 
@@ -849,7 +853,7 @@ router.post("/paypal/capture", async (req, res) => {
 
     // 1. Mark order paid
     await db.promise().query(
-      `UPDATE orders SET status='paid', paid_at=NOW() WHERE id=?`,
+      `UPDATE orders SET status='PAID', paid_at=NOW() WHERE id=?`,
       [orderId]
     );
 
