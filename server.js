@@ -443,10 +443,10 @@ router.delete("/active_play/:id", async (req, res) => {
 //bookings create
 router.post("/booking", (req, res) => {
   console.log("Register endpoint hit");
-  const { activeplay_id, seatno, payment_id, user_id, qr_code, order_id } = req.body;
+  const { activeplay_id, seatno, payment_id, user_id, qr_code, order_id, show_date } = req.body;
 
-  const query = "INSERT INTO bookings (activeplay_id, seatno, payment_id, user_id, qr_code, order_id) VALUES (?, ?, ?, ?, ?, ?)";
-  db.query(query, [activeplay_id, seatno, payment_id, user_id, qr_code, order_id], (err, result) => {
+  const query = "INSERT INTO bookings (activeplay_id, seatno, payment_id, user_id, qr_code, order_id, show_date) VALUES (?, ?, ?, ?, ?, ?, ?)";
+  db.query(query, [activeplay_id, seatno, payment_id, user_id, qr_code, order_id, show_date], (err, result) => {
     if (err) {
       console.error("Database error:", err);
       return res.status(500).json({ message: "Booking Failed." });
@@ -488,16 +488,26 @@ router.get("/bookingrs/:id", async(req,res)=>{
       }
 });
 
-// booking active seats for a specific play
+// booking active seats for a specific play and date
 router.get("/booking/active/:id", async (req, res) => {
   try {
     const { id } = req.params;
+    const { date } = req.query;
+
+    // Join with orders to get payment status
     const [rows] = await db.promise().query(
-      `SELECT seatno FROM bookings WHERE activeplay_id = ?`,
-      [id]
+      `SELECT b.seatno, o.status
+       FROM bookings b
+       LEFT JOIN orders o ON b.order_id = o.id
+       WHERE b.activeplay_id = ? AND b.show_date = ?`,
+      [id, date]
     );
 
-    res.status(200).json({ bookedSeats: rows });
+    // Separate booked (paid) and reserved (pending) seats
+    const bookedSeats = rows.filter(r => r.status === 'paid').map(r => ({ seatno: r.seatno }));
+    const reservedSeats = rows.filter(r => r.status === 'pending').map(r => ({ seatno: r.seatno }));
+
+    res.status(200).json({ bookedSeats, reservedSeats });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Error fetching booked seats" });
@@ -776,9 +786,10 @@ const { getAccessToken, PAYPAL_BASE } = require("./paypal");
 
 router.post("/paypal/create-order", async (req, res) => {
   try {
-    const { play_id, activeplay_id, seats, price, user_id } = req.body;
+    const { play_id, activeplay_id, seats, amount, user_id, show_date, show_time } = req.body;
 
-    const total = (seats.length * price).toFixed(2);
+    // Convert NPR to USD (approximate rate: 1 USD = 133 NPR)
+    const usdAmount = (amount / 133).toFixed(2);
     const token = await getAccessToken();
 
     const order = await axios.post(
@@ -788,7 +799,7 @@ router.post("/paypal/create-order", async (req, res) => {
         purchase_units: [{
           amount: {
             currency_code: "USD",
-            value: total
+            value: usdAmount
           },
           description: `Play ${play_id} | Seats ${seats.join(", ")}`
         }]
@@ -800,18 +811,19 @@ router.post("/paypal/create-order", async (req, res) => {
       }
     );
 
-    // Save pending order
+    // Save pending order with show_date and show_time
     const [result] = await db.promise().query(
-      `INSERT INTO orders 
-      (play_id, seats_json, user_id, amount, status, transaction_uuid)
-      VALUES (?, ?, ?, ?, 'pending', ?)`,
-      [play_id, JSON.stringify(seats), user_id, total, order.data.id]
+      `INSERT INTO orders
+      (play_id, activeplay_id, show_date, show_time, seats_json, user_id, amount, status, transaction_uuid, payment_method)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, 'paypal')`,
+      [play_id, activeplay_id, show_date, show_time, JSON.stringify(seats), user_id, amount, order.data.id]
     );
 
     res.json({
       approvalUrl: order.data.links.find(l => l.rel === "approve").href,
       orderId: result.insertId,
-      paypalOrderId: order.data.id
+      paypalOrderId: order.data.id,
+      activeplay_id: activeplay_id
     });
 
   } catch (err) {
@@ -822,7 +834,7 @@ router.post("/paypal/create-order", async (req, res) => {
 
 router.post("/paypal/capture", async (req, res) => {
   try {
-    const { paypalOrderId, orderId, activeplay_id } = req.body;
+    const { paypalOrderId, orderId } = req.body;
     const token = await getAccessToken();
 
     const capture = await axios.post(
@@ -835,13 +847,13 @@ router.post("/paypal/capture", async (req, res) => {
       return res.status(400).json({ message: "Payment not completed" });
     }
 
-    // 1️⃣ Mark order paid
+    // 1. Mark order paid
     await db.promise().query(
       `UPDATE orders SET status='paid', paid_at=NOW() WHERE id=?`,
       [orderId]
     );
 
-    // 2️⃣ Create bookings
+    // 2. Create bookings (get activeplay_id and show_date from order)
     const [[order]] = await db.promise().query(
       `SELECT * FROM orders WHERE id=?`, [orderId]
     );
@@ -854,16 +866,17 @@ router.post("/paypal/capture", async (req, res) => {
       );
 
       await db.promise().query(
-        `INSERT INTO bookings 
-        (activeplay_id, seatno, payment_id, user_id, qr_code, order_id)
-        VALUES (?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO bookings
+        (activeplay_id, seatno, payment_id, user_id, qr_code, order_id, show_date)
+        VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
-          activeplay_id,
+          order.activeplay_id,
           seat,
           capture.data.id,
           order.user_id,
           qr,
-          order.id
+          order.id,
+          order.show_date
         ]
       );
     }
