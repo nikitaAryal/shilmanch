@@ -278,3 +278,18 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* ===== Global Background ===== */
+body {
+ 
+
+  
+  background: linear-gradient(
+    90deg,
+    #eef3fb 0%,
+    #f6f9ff 50%,
+    #eef3fb 100%
+  );
+
+}

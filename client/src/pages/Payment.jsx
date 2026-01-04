@@ -186,7 +186,7 @@ export default function Payment() {
                 <small>Pay at the venue before the show</small>
               </span>
             </label>
-            {/* <label className={`payment-option ${paymentMethod === 'esewa' ? 'selected' : ''}`}>
+            <label className={`payment-option ${paymentMethod === 'esewa' ? 'selected' : ''}`}>
               <input
                 type="radio"
                 name="paymentMethod"
@@ -212,7 +212,7 @@ export default function Payment() {
     <small>Pay securely using PayPal</small>
   </span>
 </label>
-*/}
+
           </div>
         </div>
 

@@ -38,9 +38,7 @@ const PastPlay = () => {
                     <h1>{play.playname}</h1>
                     <p className="pastdesc">{play.description}</p>
                     <p><strong>Director:</strong>{play.director}</p>
-                    <p><strong>Duration:</strong>{play.genre}</p>
-
-                    
+                    <p><strong>Duration:</strong>{play.genre}</p>  
                 </div>
             </div>
         <Link to="/plays" className="back-link">← Back to Plays</Link>
