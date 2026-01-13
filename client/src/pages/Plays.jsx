@@ -13,8 +13,17 @@ export default function Plays() {
         const activeRes = await playsAPI.getActive();
         const pastRes = await playsAPI.getAll();
 
-        setActivePlays(Array.isArray(activeRes.data) ? activeRes.data : []);
-        setPlays(Array.isArray(pastRes.data) ? pastRes.data : []);
+        const activeData = Array.isArray(activeRes.data) ? activeRes.data : [];
+        const allPlays = Array.isArray(pastRes.data) ? pastRes.data : [];
+
+        // Get IDs of active plays to filter them out from past events
+        const activePlayIds = new Set(activeData.map(play => play.id));
+
+        // Filter out active plays from past events
+        const pastPlays = allPlays.filter(play => !activePlayIds.has(play.id));
+
+        setActivePlays(activeData);
+        setPlays(pastPlays);
       } catch (error) {
         console.error("Error fetching plays:", error);
       } finally {
