@@ -10,21 +10,32 @@ export default function Plays() {
   useEffect(() => {
     const fetchPlays = async () => {
       try {
-        const activeRes = await playsAPI.getActive();
-        const pastRes = await playsAPI.getAll();
+        const allRes = await playsAPI.getAll();
+        const allPlays = Array.isArray(allRes.data) ? allRes.data : [];
 
-        const activeData = Array.isArray(activeRes.data) ? activeRes.data : [];
-        const allPlays = Array.isArray(pastRes.data) ? pastRes.data : [];
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-        // Get play_id from active plays to filter them out from past events
-        // Note: active_play endpoint returns play_id (the actual play's id)
-        const activePlayIds = new Set(activeData.map(play => play.play_id));
+        // Filter active plays: has schedule dates and today is within range
+        const active = allPlays.filter(play => {
+          if (!play.start_date || !play.end_date) return false;
+          const startDate = new Date(play.start_date);
+          const endDate = new Date(play.end_date);
+          startDate.setHours(0, 0, 0, 0);
+          endDate.setHours(23, 59, 59, 999);
+          return today >= startDate && today <= endDate;
+        });
 
-        // Filter out active plays from past events
-        const pastPlays = allPlays.filter(play => !activePlayIds.has(play.id));
+        // Filter past plays: no schedule OR schedule has ended
+        const past = allPlays.filter(play => {
+          if (!play.start_date || !play.end_date) return true; // No schedule = past
+          const endDate = new Date(play.end_date);
+          endDate.setHours(23, 59, 59, 999);
+          return today > endDate;
+        });
 
-        setActivePlays(activeData);
-        setPlays(pastPlays);
+        setActivePlays(active);
+        setPlays(past);
       } catch (error) {
         console.error("Error fetching plays:", error);
       } finally {
