@@ -13,9 +13,9 @@ export default function Plays() {
         const allRes = await playsAPI.getAll();
         const allPlays = Array.isArray(allRes.data) ? allRes.data : [];
 
-        // Get today's date as YYYY-MM-DD string (timezone safe)
+        // Get today's date as YYYY-MM-DD string (timezone safe - no toISOString)
         const today = new Date();
-        const todayStr = today.toISOString().split('T')[0];
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
         // Helper to extract just the date part (YYYY-MM-DD)
         const getDateStr = (dateValue) => {

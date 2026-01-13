@@ -304,6 +304,21 @@
   color: #991b1b;
 }
 
+.badge-active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.badge-past {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.badge-upcoming {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
 /* Modal */
 .modal-overlay {
   position: fixed;

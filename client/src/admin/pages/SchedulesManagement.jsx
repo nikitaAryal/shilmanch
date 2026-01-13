@@ -109,6 +109,18 @@ export default function SchedulesManagement() {
     return date.toLocaleDateString();
   };
 
+  const getScheduleStatus = (startDate, endDate) => {
+    if (!startDate || !endDate) return 'unknown';
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const startStr = startDate.split('T')[0];
+    const endStr = endDate.split('T')[0];
+
+    if (todayStr < startStr) return 'upcoming';
+    if (todayStr >= startStr && todayStr <= endStr) return 'active';
+    return 'past';
+  };
+
   if (loading) {
     return <div className="admin-loading"><div className="spinner"></div></div>;
   }
@@ -117,7 +129,7 @@ export default function SchedulesManagement() {
     <div className="schedules-management">
       <div className="data-table-container">
         <div className="table-header">
-          <h2>Active Play Schedules</h2>
+          <h2>All Play Schedules</h2>
           <button className="btn btn-primary" onClick={openAddModal}>
             + Add Schedule
           </button>
@@ -131,30 +143,39 @@ export default function SchedulesManagement() {
                 <th>Start Date</th>
                 <th>End Date</th>
                 <th>Show Time</th>
+                <th>Status</th>
                 <th>Seats</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {schedules.map((schedule) => (
-                <tr key={schedule.id}>
-                  <td>{schedule.playname}</td>
-                  <td>{formatDate(schedule.start_date)}</td>
-                  <td>{formatDate(schedule.end_date)}</td>
-                  <td>{schedule.time}</td>
-                  <td>60 (6x10)</td>
-                  <td>
-                    <div className="action-buttons">
-                      <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(schedule)}>
-                        Edit
-                      </button>
-                      <button className="btn btn-danger btn-sm" onClick={() => handleDelete(schedule.id)}>
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {schedules.map((schedule) => {
+                const status = getScheduleStatus(schedule.start_date, schedule.end_date);
+                return (
+                  <tr key={schedule.id}>
+                    <td>{schedule.playname}</td>
+                    <td>{formatDate(schedule.start_date)}</td>
+                    <td>{formatDate(schedule.end_date)}</td>
+                    <td>{schedule.time}</td>
+                    <td>
+                      <span className={`badge badge-${status}`}>
+                        {status.charAt(0).toUpperCase() + status.slice(1)}
+                      </span>
+                    </td>
+                    <td>60 (6x10)</td>
+                    <td>
+                      <div className="action-buttons">
+                        <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(schedule)}>
+                          Edit
+                        </button>
+                        <button className="btn btn-danger btn-sm" onClick={() => handleDelete(schedule.id)}>
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         ) : (

@@ -32,8 +32,11 @@ const Tickets = () => {
         month: "short",
         day: "numeric",
       });
-      // Store ISO date (YYYY-MM-DD) for database, display date for UI
-      const isoDate = current.toISOString().split('T')[0];
+      // Manually construct ISO date to avoid timezone conversion issues
+      const year = current.getFullYear();
+      const month = String(current.getMonth() + 1).padStart(2, '0');
+      const day = String(current.getDate()).padStart(2, '0');
+      const isoDate = `${year}-${month}-${day}`;
       dates.push({ date: displayDate, weekday, isoDate });
       current.setDate(current.getDate() + 1);
     }
@@ -51,7 +54,9 @@ const Tickets = () => {
 
           // Check if play is currently active
           if (data.play.start_date && data.play.end_date) {
-            const todayStr = new Date().toISOString().split('T')[0];
+            // Get today's date without timezone issues
+            const today = new Date();
+            const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
             const startStr = data.play.start_date.split('T')[0];
             const endStr = data.play.end_date.split('T')[0];
             const isActive = todayStr >= startStr && todayStr <= endStr;
