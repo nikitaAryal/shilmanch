@@ -13,25 +13,30 @@ export default function Plays() {
         const allRes = await playsAPI.getAll();
         const allPlays = Array.isArray(allRes.data) ? allRes.data : [];
 
+        // Get today's date as YYYY-MM-DD string (timezone safe)
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const todayStr = today.toISOString().split('T')[0];
+
+        // Helper to extract just the date part (YYYY-MM-DD)
+        const getDateStr = (dateValue) => {
+          if (!dateValue) return null;
+          return dateValue.split('T')[0];
+        };
 
         // Filter active plays: has schedule dates and today is within range
         const active = allPlays.filter(play => {
-          if (!play.start_date || !play.end_date) return false;
-          const startDate = new Date(play.start_date);
-          const endDate = new Date(play.end_date);
-          startDate.setHours(0, 0, 0, 0);
-          endDate.setHours(23, 59, 59, 999);
-          return today >= startDate && today <= endDate;
+          const startStr = getDateStr(play.start_date);
+          const endStr = getDateStr(play.end_date);
+          if (!startStr || !endStr) return false;
+          return todayStr >= startStr && todayStr <= endStr;
         });
 
         // Filter past plays: no schedule OR schedule has ended
         const past = allPlays.filter(play => {
-          if (!play.start_date || !play.end_date) return true; // No schedule = past
-          const endDate = new Date(play.end_date);
-          endDate.setHours(23, 59, 59, 999);
-          return today > endDate;
+          const startStr = getDateStr(play.start_date);
+          const endStr = getDateStr(play.end_date);
+          if (!startStr || !endStr) return true; // No schedule = past
+          return todayStr > endStr;
         });
 
         setActivePlays(active);
