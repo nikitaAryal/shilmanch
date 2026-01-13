@@ -401,6 +401,64 @@ router.get("/schedules", async (req, res) => {
   }
 });
 
+// Seat statistics for active plays (with optional date filter)
+router.get("/seat-stats", async (req, res) => {
+  try {
+    const { date } = req.query;
+
+    // Get all currently active plays
+    const [activePlays] = await db.promise().query(`
+      SELECT a.id as activeplay_id, p.playname, a.start_date, a.end_date, a.time, a.total_occupancy
+      FROM plays p
+      INNER JOIN active_play a ON p.id = a.play_id
+      WHERE CURDATE() BETWEEN DATE(a.start_date) AND DATE(a.end_date)
+      ORDER BY a.start_date ASC
+    `);
+
+    // For each active play, get booked and reserved seat counts
+    const stats = await Promise.all(activePlays.map(async (play) => {
+      let dateCondition = '';
+      let params = [play.activeplay_id];
+
+      if (date) {
+        dateCondition = 'AND DATE(b.show_date) = ?';
+        params.push(date);
+      }
+
+      // Get booked seats (from orders with PAID status)
+      const [bookedResult] = await db.promise().query(`
+        SELECT COUNT(*) as count FROM bookings b
+        JOIN orders o ON b.order_id = o.id
+        WHERE b.activeplay_id = ? AND o.status = 'PAID' ${dateCondition}
+      `, params);
+
+      // Get reserved seats (from orders with PENDING status)
+      const [reservedResult] = await db.promise().query(`
+        SELECT COUNT(*) as count FROM bookings b
+        JOIN orders o ON b.order_id = o.id
+        WHERE b.activeplay_id = ? AND o.status = 'PENDING' ${dateCondition}
+      `, params);
+
+      return {
+        activeplay_id: play.activeplay_id,
+        playname: play.playname,
+        start_date: play.start_date,
+        end_date: play.end_date,
+        time: play.time,
+        total_seats: play.total_occupancy,
+        booked_seats: bookedResult[0].count,
+        reserved_seats: reservedResult[0].count,
+        available_seats: play.total_occupancy - bookedResult[0].count - reservedResult[0].count
+      };
+    }));
+
+    res.status(200).json(stats);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error fetching seat statistics" });
+  }
+});
+
 //activeplay sinngle read
 router.get("/active_play/:id", async(req,res)=>{
   try{

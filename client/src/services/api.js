@@ -61,6 +61,7 @@ export const activePlayAPI = {
   create: (data) => api.post('/createacplay', data),
   update: (id, data) => api.patch(`/active_play/${id}`, data),
   delete: (id) => api.delete(`/active_play/${id}`),
+  getSeatStats: (date) => api.get('/seat-stats', { params: date ? { date } : {} }),
 };
 
 // Bookings API

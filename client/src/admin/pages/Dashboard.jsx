@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../../services/api';
+import api, { activePlayAPI } from '../../services/api';
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
@@ -11,7 +11,15 @@ export default function Dashboard() {
     totalRevenue: 0,
   });
   const [recentOrders, setRecentOrders] = useState([]);
+  const [seatStats, setSeatStats] = useState([]);
+  const [selectedDate, setSelectedDate] = useState('');
   const [loading, setLoading] = useState(true);
+
+  // Get today's date in YYYY-MM-DD format
+  const getTodayStr = () => {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  };
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -51,6 +59,21 @@ export default function Dashboard() {
     fetchDashboardData();
   }, []);
 
+  // Fetch seat stats when date changes
+  useEffect(() => {
+    const fetchSeatStats = async () => {
+      try {
+        const response = await activePlayAPI.getSeatStats(selectedDate || null);
+        setSeatStats(response.data || []);
+      } catch (error) {
+        console.error('Error fetching seat stats:', error);
+        setSeatStats([]);
+      }
+    };
+
+    fetchSeatStats();
+  }, [selectedDate]);
+
   if (loading) {
     return <div className="admin-loading"><div className="spinner"></div></div>;
   }
@@ -77,6 +100,73 @@ export default function Dashboard() {
           <h3>Total Revenue</h3>
           <div className="value">Rs. {stats.totalRevenue.toLocaleString()}</div>
         </div>
+      </div>
+
+      {/* Seat Statistics for Active Plays */}
+      <div className="data-table-container" style={{ marginTop: 24 }}>
+        <div className="table-header">
+          <h2>Seat Statistics - Active Plays</h2>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <label style={{ fontSize: '0.875rem', color: '#6b7280' }}>Filter by Date:</label>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              style={{
+                padding: '8px 12px',
+                borderRadius: 6,
+                border: '1px solid #d1d5db',
+              }}
+            />
+            {selectedDate && (
+              <button
+                className="btn btn-secondary btn-sm"
+                onClick={() => setSelectedDate('')}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+
+        {seatStats.length > 0 ? (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Play</th>
+                <th>Show Time</th>
+                <th>Total Seats</th>
+                <th>Booked</th>
+                <th>Reserved</th>
+                <th>Available</th>
+              </tr>
+            </thead>
+            <tbody>
+              {seatStats.map((stat) => (
+                <tr key={stat.activeplay_id}>
+                  <td>
+                    <strong>{stat.playname}</strong>
+                  </td>
+                  <td>{stat.time}</td>
+                  <td>{stat.total_seats}</td>
+                  <td>
+                    <span className="badge badge-active">{stat.booked_seats}</span>
+                  </td>
+                  <td>
+                    <span className="badge badge-upcoming">{stat.reserved_seats}</span>
+                  </td>
+                  <td>
+                    <span className="badge badge-past">{stat.available_seats}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="empty-state">
+            <p>{selectedDate ? 'No bookings for this date' : 'No active plays at the moment'}</p>
+          </div>
+        )}
       </div>
 
       {/* Recent Orders */}
