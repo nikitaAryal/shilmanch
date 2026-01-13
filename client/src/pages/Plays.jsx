@@ -16,8 +16,9 @@ export default function Plays() {
         const activeData = Array.isArray(activeRes.data) ? activeRes.data : [];
         const allPlays = Array.isArray(pastRes.data) ? pastRes.data : [];
 
-        // Get IDs of active plays to filter them out from past events
-        const activePlayIds = new Set(activeData.map(play => play.id));
+        // Get play_id from active plays to filter them out from past events
+        // Note: active_play endpoint returns play_id (the actual play's id)
+        const activePlayIds = new Set(activeData.map(play => play.play_id));
 
         // Filter out active plays from past events
         const pastPlays = allPlays.filter(play => !activePlayIds.has(play.id));
