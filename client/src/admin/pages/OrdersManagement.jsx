@@ -50,9 +50,16 @@ export default function OrdersManagement() {
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
+    // If it's already a readable format like "Jan 13", return as-is
+    if (!dateStr.includes('T') && !dateStr.includes('-')) {
+      return dateStr;
+    }
     // Extract just the date part to avoid timezone issues
     const datePart = dateStr.split('T')[0];
     const [year, month, day] = datePart.split('-').map(Number);
+    if (isNaN(year) || isNaN(month) || isNaN(day)) {
+      return dateStr; // Return original if parsing fails
+    }
     const date = new Date(year, month - 1, day);
     return date.toLocaleDateString();
   };

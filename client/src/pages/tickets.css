@@ -91,3 +91,30 @@
 .time-btn:hover {
   background-color: #0056b3;
 }
+
+.past-play-notice {
+  background-color: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 2rem 0;
+  text-align: center;
+}
+
+.past-play-notice p {
+  color: #92400e;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.back-link {
+  display: inline-block;
+  margin-top: 1.5rem;
+  color: #007BFF;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}

@@ -22,7 +22,7 @@ export default function SchedulesManagement() {
   const fetchData = async () => {
     try {
       const [schedulesRes, playsRes] = await Promise.all([
-        activePlayAPI.getAll(),
+        activePlayAPI.getAllSchedules(), // Use getAllSchedules for admin (no date filter)
         playsAPI.getAll(),
       ]);
       setSchedules(schedulesRes.data || []);

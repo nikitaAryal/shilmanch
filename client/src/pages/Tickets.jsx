@@ -11,6 +11,7 @@ const Tickets = () => {
   const [showDates, setShowDates] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
   const [showTimes, setShowTimes] = useState([]);
+  const [isActivPlay, setIsActivePlay] = useState(false);
 
   const generateDateRange = (start, end) => {
     const dates = [];
@@ -27,11 +28,13 @@ const Tickets = () => {
 
     while (current <= endDate) {
       const weekday = current.toLocaleDateString("en-US", { weekday: "short" });
-      const date = current.toLocaleDateString("en-US", {
+      const displayDate = current.toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
       });
-      dates.push({ date, weekday });
+      // Store ISO date (YYYY-MM-DD) for database, display date for UI
+      const isoDate = current.toISOString().split('T')[0];
+      dates.push({ date: displayDate, weekday, isoDate });
       current.setDate(current.getDate() + 1);
     }
     return dates;
@@ -45,13 +48,26 @@ const Tickets = () => {
 
         if (data && data.play) {
           setPlay(data.play);
+
+          // Check if play is currently active
           if (data.play.start_date && data.play.end_date) {
-            const generatedDates = generateDateRange(
-              data.play.start_date,
-              data.play.end_date
-            );
-            setShowDates(generatedDates);
+            const todayStr = new Date().toISOString().split('T')[0];
+            const startStr = data.play.start_date.split('T')[0];
+            const endStr = data.play.end_date.split('T')[0];
+            const isActive = todayStr >= startStr && todayStr <= endStr;
+            setIsActivePlay(isActive);
+
+            if (isActive) {
+              const generatedDates = generateDateRange(
+                data.play.start_date,
+                data.play.end_date
+              );
+              setShowDates(generatedDates);
+            }
+          } else {
+            setIsActivePlay(false);
           }
+
           if (data.play.time) {
             setShowTimes([data.play.time]);
           }
@@ -99,36 +115,44 @@ const Tickets = () => {
         </div>
       </div>
 
-      {/* 📅 Calendar section */}
-      <div className="calendar-section">
-        <h2>Select Date</h2>
-        <div className="calendar-grid">
-          {showDates.map((day, index) => (
-            <div
-              key={index}
-              className={`calendar-box ${
-                selectedDate === day.date ? "selected" : ""
-              }`}
-              onClick={() => setSelectedDate(day.date)}
-            >
-              <span className="weekday">{day.weekday}</span>
-              <span className="date">{day.date}</span>
+      {isActivPlay ? (
+        <>
+          {/* 📅 Calendar section */}
+          <div className="calendar-section">
+            <h2>Select Date</h2>
+            <div className="calendar-grid">
+              {showDates.map((day, index) => (
+                <div
+                  key={index}
+                  className={`calendar-box ${
+                    selectedDate === day.isoDate ? "selected" : ""
+                  }`}
+                  onClick={() => setSelectedDate(day.isoDate)}
+                >
+                  <span className="weekday">{day.weekday}</span>
+                  <span className="date">{day.date}</span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      {/* ⏰ Time section */}
-      <div className="time-section">
-        <h2>Show Time</h2>
-        <div className="time-boxes">
-          {showTimes.length > 0 && (
-            <button className="time-btn" onClick={handleTimeClick}>
-              {showTimes[0]}
-            </button>
-          )}
+          {/* ⏰ Time section */}
+          <div className="time-section">
+            <h2>Show Time</h2>
+            <div className="time-boxes">
+              {showTimes.length > 0 && (
+                <button className="time-btn" onClick={handleTimeClick}>
+                  {showTimes[0]}
+                </button>
+              )}
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="past-play-notice">
+          <p>This play has ended and is no longer available for booking.</p>
         </div>
-      </div>
+      )}
 
       <Link to="/plays" className="back-link">
         ← Back to Plays

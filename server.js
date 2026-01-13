@@ -376,12 +376,28 @@ router.get("/active_play", async (req, res) => {
       WHERE CURDATE() BETWEEN a.start_date AND a.end_date
       ORDER BY a.start_date ASC
     `);
-    console.log("Active plays query result:", rows); // 👈 add this line
+    console.log("Active plays query result:", rows);
 
     res.status(200).json(rows);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Error fetching active plays" });
+  }
+});
+
+// All schedules for admin (no date filter)
+router.get("/schedules", async (req, res) => {
+  try {
+    const [rows] = await db.promise().query(`
+      SELECT a.id, p.id AS play_id, p.playname, p.director, p.duration, p.genre, p.description, p.image_url, a.start_date, a.end_date, a.time, a.total_occupancy
+      FROM plays p
+      INNER JOIN active_play a ON p.id = a.play_id
+      ORDER BY a.start_date DESC
+    `);
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error fetching schedules" });
   }
 });
 

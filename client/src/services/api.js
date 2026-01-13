@@ -56,6 +56,7 @@ export const playsAPI = {
 // Active Plays API
 export const activePlayAPI = {
   getAll: () => api.get('/active_play'),
+  getAllSchedules: () => api.get('/schedules'), // For admin - no date filter
   getById: (id) => api.get(`/active_play/${id}`),
   create: (data) => api.post('/createacplay', data),
   update: (id, data) => api.patch(`/active_play/${id}`, data),
