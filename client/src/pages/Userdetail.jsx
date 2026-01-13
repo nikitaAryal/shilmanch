@@ -67,6 +67,15 @@ const UserProfile = () => {
     navigate("/login");
   };
 
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '-';
+    // Extract just the date part to avoid timezone issues
+    const datePart = dateStr.split('T')[0];
+    const [year, month, day] = datePart.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString();
+  };
+
   const getStatusClass = (status) => {
     switch (status?.toLowerCase()) {
       case 'paid':
@@ -160,7 +169,7 @@ const UserProfile = () => {
                 <div className="booking-details">
                   <h3>{order.playname}</h3>
                   <p>
-                    <strong>Date:</strong> {new Date(order.show_date).toLocaleDateString()} | <strong>Time:</strong> {order.show_time}
+                    <strong>Date:</strong> {formatDate(order.show_date)} | <strong>Time:</strong> {order.show_time}
                   </p>
                   <p><strong>Seats:</strong> {JSON.parse(order.seats_json).join(", ")}</p>
                   <p className="booking-amount">Amount: Rs.{order.amount}</p>

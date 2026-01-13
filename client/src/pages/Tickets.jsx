@@ -14,8 +14,16 @@ const Tickets = () => {
 
   const generateDateRange = (start, end) => {
     const dates = [];
-    let current = new Date(start);
-    const endDate = new Date(end);
+    // Extract just the date part to avoid timezone issues
+    const startStr = start.split('T')[0];
+    const endStr = end.split('T')[0];
+
+    // Parse as local date (YYYY-MM-DD)
+    const [startYear, startMonth, startDay] = startStr.split('-').map(Number);
+    const [endYear, endMonth, endDay] = endStr.split('-').map(Number);
+
+    let current = new Date(startYear, startMonth - 1, startDay);
+    const endDate = new Date(endYear, endMonth - 1, endDay);
 
     while (current <= endDate) {
       const weekday = current.toLocaleDateString("en-US", { weekday: "short" });

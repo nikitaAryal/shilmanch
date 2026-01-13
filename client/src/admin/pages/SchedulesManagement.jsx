@@ -102,7 +102,11 @@ export default function SchedulesManagement() {
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString();
+    // Extract just the date part to avoid timezone issues
+    const datePart = dateStr.split('T')[0];
+    const [year, month, day] = datePart.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString();
   };
 
   if (loading) {
