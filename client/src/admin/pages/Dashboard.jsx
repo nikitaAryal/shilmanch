@@ -12,7 +12,6 @@ export default function Dashboard() {
   });
   const [recentOrders, setRecentOrders] = useState([]);
   const [seatStats, setSeatStats] = useState([]);
-  const [selectedDate, setSelectedDate] = useState('');
   const [loading, setLoading] = useState(true);
 
   // Get today's date in YYYY-MM-DD format
@@ -20,6 +19,8 @@ export default function Dashboard() {
     const today = new Date();
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   };
+
+  const [selectedDate, setSelectedDate] = useState(getTodayStr());
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -118,14 +119,12 @@ export default function Dashboard() {
                 border: '1px solid #d1d5db',
               }}
             />
-            {selectedDate && (
-              <button
-                className="btn btn-secondary btn-sm"
-                onClick={() => setSelectedDate('')}
-              >
-                Clear
-              </button>
-            )}
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={() => setSelectedDate(getTodayStr())}
+            >
+              Today
+            </button>
           </div>
         </div>
 
@@ -164,7 +163,7 @@ export default function Dashboard() {
           </table>
         ) : (
           <div className="empty-state">
-            <p>{selectedDate ? 'No bookings for this date' : 'No active plays at the moment'}</p>
+            <p>No active plays or no bookings for this date</p>
           </div>
         )}
       </div>
