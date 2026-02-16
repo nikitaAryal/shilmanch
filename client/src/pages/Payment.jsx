@@ -53,17 +53,9 @@ export default function Payment() {
       }
 
       // Navigate to confirmation page
-      navigate('/booking-confirmed', {
-        state: {
-          orderId,
-          play,
-          selectedDate,
-          showTimes,
-          selectedSeats,
-          totalAmount,
-          paymentMethod: 'cod'
-        }
-      });
+      // ✅ AUTO OPEN BILL
+      navigate(`/bill/${orderId}`);
+
     } catch (error) {
       console.error("Booking failed:", error);
       alert("Booking failed. Please try again.");

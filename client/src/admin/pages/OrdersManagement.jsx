@@ -44,7 +44,7 @@ export default function OrdersManagement() {
       fetchOrders();
     } catch (error) {
       console.error('Error cancelling order:', error);
-      alert('Failed to cancel order');
+      alert('Failed to cancel order');    
     }
   };
 

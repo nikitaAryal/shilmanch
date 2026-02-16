@@ -14,6 +14,7 @@ import UserProfile from './pages/Userdetail'
 import ProtectedRoute from './components/ProtectedRoute'
 import PaymentSuccess from './pages/PaymentSuccess'
 import PaymentCancel from './pages/PaymentCancel'
+import Bill from './pages/Bill'
 
 // Admin imports
 import AdminLayout from './admin/AdminLayout'
@@ -61,6 +62,7 @@ export default function App() {
         } />
         <Route path="/payment/success" element={<PaymentSuccess />} />
         <Route path="/payment/cancel" element={<PaymentCancel />} />
+        <Route path="/bill/:orderId" element={<Bill />} />
 
 
         {/* Admin routes */}

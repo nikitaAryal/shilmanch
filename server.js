@@ -305,7 +305,7 @@ router.get("/plays", async (req, res) => {
 });
 
 
-//play U
+//play Update
 router.patch("/play/:id", upload.single("image"), async (req, res) => {
   try {
     const { id } = req.params;
@@ -967,7 +967,59 @@ router.post("/paypal/capture", async (req, res) => {
   }
 });
 
+// Bill Generation 
 
+router.get("/api/bill/:orderId", async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    // 1️⃣ Get order
+    const [orders] = await db.promise().query(
+      `SELECT * FROM orders WHERE id = ?`,
+      [orderId]
+    );
+
+    if (!orders.length) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    const order = orders[0];
+
+    // 2️⃣ Get bookings (seats)
+    const [bookings] = await db.promise().query(
+      `SELECT seatno FROM bookings WHERE order_id = ?`,
+      [orderId]
+    );
+
+    // 3️⃣ Prepare bill
+    const seats =
+      order.seats_json ? JSON.parse(order.seats_json) : bookings;
+
+    const subtotal = order.amount;
+    const vat = subtotal * 0.13;
+    const total = subtotal + vat;
+
+    const bill = {
+      billNo: "TH-" + order.id,
+      date: order.created_at,
+      customerId: order.user_id,
+      showDate: order.show_date,
+      showTime: order.show_time,
+      seats,
+      paymentMethod: order.payment_method,
+      transaction: order.transaction_uuid,
+      subtotal,
+      vat,
+      total,
+      status: order.status
+    };
+
+    res.json(bill);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 
 module.exports = router;
